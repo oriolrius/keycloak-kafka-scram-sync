@@ -1,9 +1,11 @@
 ---
 id: task-015
 title: Implement synchronization diff engine
-status: To Do
-assignee: []
+status: In Progress
+assignee:
+  - '@claude'
 created_date: '2025-11-04 18:33'
+updated_date: '2025-11-04 20:57'
 labels:
   - backend
   - sync
