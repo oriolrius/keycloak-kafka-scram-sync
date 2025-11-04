@@ -35,3 +35,24 @@ Create the main ReconciliationService that orchestrates the complete sync cycle:
 - [ ] #12 Unit tests with mocked dependencies validate orchestration logic
 - [ ] #13 Integration test validates end-to-end reconciliation flow
 <!-- AC:END -->
+
+## Implementation Plan
+
+<!-- SECTION:PLAN:BEGIN -->
+1. Create ReconciliationResult domain model to return summary data
+2. Review existing SyncBatch and SyncOperation entities
+3. Create ReconciliationService with @ApplicationScoped in reconcile package
+4. Inject KeycloakUserFetcher, KafkaScramManager, ScramCredentialGenerator, and JPA EntityManager
+5. Implement performReconciliation() method orchestrating the full flow
+6. Generate unique correlation_id using UUID for each run
+7. Create SyncBatch record at start with source (SCHEDULED/MANUAL/WEBHOOK)
+8. Fetch all users from Keycloak and existing credentials from Kafka
+9. Compute diff: identify users to create, update, and potentially delete
+10. Generate random passwords and SCRAM credentials for upserts
+11. Execute batch upsert operations via KafkaScramManager
+12. Persist each operation result in sync_operation table (success/error)
+13. Update sync_batch with final counts and completion time
+14. Implement comprehensive error handling with partial failure support
+15. Add detailed logging with timings
+16. Return ReconciliationResult with summary statistics
+<!-- SECTION:PLAN:END -->
