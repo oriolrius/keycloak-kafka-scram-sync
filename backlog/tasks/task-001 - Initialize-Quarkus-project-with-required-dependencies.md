@@ -1,11 +1,11 @@
 ---
 id: task-001
 title: Initialize Quarkus project with required dependencies
-status: In Progress
+status: Done
 assignee:
   - '@claude'
 created_date: '2025-11-04 14:33'
-updated_date: '2025-11-04 16:34'
+updated_date: '2025-11-04 16:35'
 labels:
   - backend
   - setup
