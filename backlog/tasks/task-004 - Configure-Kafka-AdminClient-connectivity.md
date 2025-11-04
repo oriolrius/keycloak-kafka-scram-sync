@@ -5,7 +5,7 @@ status: In Progress
 assignee:
   - '@claude'
 created_date: '2025-11-04 14:34'
-updated_date: '2025-11-04 17:04'
+updated_date: '2025-11-04 17:10'
 labels:
   - backend
   - kafka
@@ -22,12 +22,12 @@ Set up Kafka AdminClient with SASL_SSL authentication using SCRAM-SHA-512. Imple
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 AdminClient bean is configured with all required security properties
-- [ ] #2 Configuration reads KAFKA_BOOTSTRAP_SERVERS, KAFKA_SECURITY_PROTOCOL, KAFKA_SASL_MECHANISM, and KAFKA_SASL_JAAS from environment
-- [ ] #3 Connection to Kafka cluster is validated on startup
-- [ ] #4 AdminClient can successfully execute basic operations (e.g., listTopics)
-- [ ] #5 Connection errors are properly logged with context
-- [ ] #6 AdminClient is included in health check status
+- [x] #1 AdminClient bean is configured with all required security properties
+- [x] #2 Configuration reads KAFKA_BOOTSTRAP_SERVERS, KAFKA_SECURITY_PROTOCOL, KAFKA_SASL_MECHANISM, and KAFKA_SASL_JAAS from environment
+- [x] #3 Connection to Kafka cluster is validated on startup
+- [x] #4 AdminClient can successfully execute basic operations (e.g., listTopics)
+- [x] #5 Connection errors are properly logged with context
+- [x] #6 AdminClient is included in health check status
 <!-- AC:END -->
 
 ## Implementation Plan
