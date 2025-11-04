@@ -1,7 +1,7 @@
 ---
 id: task-002
 title: Implement health check endpoints
-status: In Progress
+status: Done
 assignee:
   - '@claude'
 created_date: '2025-11-04 14:33'
