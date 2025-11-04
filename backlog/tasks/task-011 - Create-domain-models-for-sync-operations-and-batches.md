@@ -5,7 +5,7 @@ status: In Progress
 assignee:
   - '@claude'
 created_date: '2025-11-04 18:33'
-updated_date: '2025-11-04 18:51'
+updated_date: '2025-11-04 18:54'
 labels:
   - backend
   - domain
@@ -21,14 +21,14 @@ Implement Java entity classes (SyncOperation, SyncBatch, RetentionState) with pr
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 SyncOperation entity created with all fields from schema
-- [ ] #2 SyncBatch entity created with all fields from schema
-- [ ] #3 RetentionState entity created with all fields from schema
-- [ ] #4 OpType enum created (SCRAM_UPSERT, SCRAM_DELETE, ACL_CREATE, ACL_DELETE)
-- [ ] #5 OperationResult enum created (SUCCESS, ERROR, SKIPPED)
-- [ ] #6 ScramMechanism enum created (SCRAM_SHA_256, SCRAM_SHA_512)
-- [ ] #7 All entities include proper JPA annotations (@Entity, @Table, @Id, @Column)
-- [ ] #8 Unit tests validate entity creation and field mappings
+- [x] #1 SyncOperation entity created with all fields from schema
+- [x] #2 SyncBatch entity created with all fields from schema
+- [x] #3 RetentionState entity created with all fields from schema
+- [x] #4 OpType enum created (SCRAM_UPSERT, SCRAM_DELETE, ACL_CREATE, ACL_DELETE)
+- [x] #5 OperationResult enum created (SUCCESS, ERROR, SKIPPED)
+- [x] #6 ScramMechanism enum created (SCRAM_SHA_256, SCRAM_SHA_512)
+- [x] #7 All entities include proper JPA annotations (@Entity, @Table, @Id, @Column)
+- [x] #8 Unit tests validate entity creation and field mappings
 <!-- AC:END -->
 
 ## Implementation Plan
