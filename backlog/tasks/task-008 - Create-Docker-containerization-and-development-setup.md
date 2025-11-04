@@ -23,9 +23,9 @@ Create Dockerfile for building the sync agent, docker-compose.yml for local deve
 <!-- AC:BEGIN -->
 - [x] #1 Dockerfile builds the Quarkus application successfully
 - [x] #2 Dockerfile uses multi-stage build for optimal image size
-- [ ] #3 docker-compose.yml includes Kafka, Keycloak, and sync-agent services
-- [ ] #4 docker-compose.yml configures service dependencies correctly
-- [ ] #5 Health check is configured in docker-compose for sync-agent
+- [x] #3 docker-compose.yml includes Kafka, Keycloak, and sync-agent services
+- [x] #4 docker-compose.yml configures service dependencies correctly
+- [x] #5 Health check is configured in docker-compose for sync-agent
 - [ ] #6 README.md includes instructions for building and running locally
 - [ ] #7 README.md documents all environment variables
 <!-- AC:END -->
