@@ -5,7 +5,7 @@ status: In Progress
 assignee:
   - '@claude'
 created_date: '2025-11-04 18:33'
-updated_date: '2025-11-04 19:10'
+updated_date: '2025-11-04 19:11'
 labels:
   - backend
   - kafka
@@ -21,15 +21,15 @@ Create a service that manages SCRAM credentials in Kafka using the AdminClient A
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 KafkaScramManager service created with AdminClient integration
-- [ ] #2 describeUserScramCredentials method returns map of principal to mechanisms
-- [ ] #3 alterUserScramCredentials method supports both upsert and delete operations
-- [ ] #4 Handles UserScramCredentialUpsertion for creating/updating credentials
-- [ ] #5 Handles UserScramCredentialDeletion for removing credentials
-- [ ] #6 Supports batch operations (multiple principals in single API call)
-- [ ] #7 Returns AlterUserScramCredentialsResult with per-principal futures
-- [ ] #8 Implements proper error handling for Kafka API exceptions
-- [ ] #9 Logs all operations with principal, mechanism, and operation type
+- [x] #1 KafkaScramManager service created with AdminClient integration
+- [x] #2 describeUserScramCredentials method returns map of principal to mechanisms
+- [x] #3 alterUserScramCredentials method supports both upsert and delete operations
+- [x] #4 Handles UserScramCredentialUpsertion for creating/updating credentials
+- [x] #5 Handles UserScramCredentialDeletion for removing credentials
+- [x] #6 Supports batch operations (multiple principals in single API call)
+- [x] #7 Returns AlterUserScramCredentialsResult with per-principal futures
+- [x] #8 Implements proper error handling for Kafka API exceptions
+- [x] #9 Logs all operations with principal, mechanism, and operation type
 - [ ] #10 Unit tests with mocked AdminClient
 - [ ] #11 Integration test validates operations against real Kafka (Testcontainers)
 <!-- AC:END -->
