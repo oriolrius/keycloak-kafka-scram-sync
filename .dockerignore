@@ -1,4 +1,13 @@
+# Exclude everything by default
 *
+
+# Include source files needed for multi-stage build
+!pom.xml
+!mvnw
+!.mvn/
+!src/
+
+# Include pre-built artifacts (for alternative build approach)
 !target/*-runner
 !target/*-runner.jar
 !target/lib/*

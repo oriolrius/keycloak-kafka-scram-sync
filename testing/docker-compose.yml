@@ -109,6 +109,64 @@ services:
       - ${NETWORK_NAME:-keycloak-kafka-backbone}
     restart: unless-stopped
 
+  # Sync Agent - Keycloak to Kafka synchronization service
+  sync-agent:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    image: keycloak-kafka-sync-agent:latest
+    hostname: ${AGENT_HOSTNAME:-agent.example}
+    container_name: sync-agent
+    ports:
+      - "${AGENT_HOST_PORT:-57010}:${AGENT_CONTAINER_PORT:-57010}"
+    environment:
+      # Quarkus Configuration
+      QUARKUS_HTTP_PORT: ${AGENT_CONTAINER_PORT:-57010}
+
+      # Database Configuration
+      SQLITE_DB_PATH: ${SQLITE_DB_PATH:-/app/data/sync-agent.db}
+
+      # Kafka Configuration (use internal PLAINTEXT for simplicity)
+      KAFKA_BOOTSTRAP_SERVERS: ${KAFKA_BOOTSTRAP_SERVERS:-kafka.example:9092}
+      KAFKA_SECURITY_PROTOCOL: ${KAFKA_SECURITY_PROTOCOL:-PLAINTEXT}
+      KAFKA_REQUEST_TIMEOUT_MS: ${KAFKA_REQUEST_TIMEOUT_MS:-30000}
+      KAFKA_CONNECTION_TIMEOUT_MS: ${KAFKA_CONNECTION_TIMEOUT_MS:-10000}
+
+      # Keycloak Configuration
+      KEYCLOAK_URL: ${KEYCLOAK_URL:-https://keycloak.example:8443}
+      KEYCLOAK_REALM: ${KEYCLOAK_REALM:-master}
+      KEYCLOAK_CLIENT_ID: ${KEYCLOAK_CLIENT_ID:-admin-cli}
+      KEYCLOAK_ADMIN_USERNAME: ${KEYCLOAK_ADMIN_USERNAME:-admin}
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-The2password.}
+      KEYCLOAK_CONNECTION_TIMEOUT_MS: ${KEYCLOAK_CONNECTION_TIMEOUT_MS:-10000}
+      KEYCLOAK_READ_TIMEOUT_MS: ${KEYCLOAK_READ_TIMEOUT_MS:-30000}
+
+      # Reconciliation Configuration
+      RECONCILE_INTERVAL_SECONDS: ${RECONCILE_INTERVAL_SECONDS:-120}
+      RECONCILE_PAGE_SIZE: ${RECONCILE_PAGE_SIZE:-500}
+
+      # Retention Configuration
+      RETENTION_MAX_BYTES: ${RETENTION_MAX_BYTES:-268435456}
+      RETENTION_MAX_AGE_DAYS: ${RETENTION_MAX_AGE_DAYS:-30}
+      RETENTION_PURGE_INTERVAL_SECONDS: ${RETENTION_PURGE_INTERVAL_SECONDS:-300}
+
+      # Logging
+      QUARKUS_LOG_LEVEL: ${AGENT_LOG_LEVEL:-INFO}
+    volumes:
+      - ${AGENT_DATA_DIR:-./data/sync-agent}:/app/data
+    depends_on:
+      - kafka
+      - keycloak
+    networks:
+      - ${NETWORK_NAME:-keycloak-kafka-backbone}
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:57010/health/ready"]
+      interval: 30s
+      timeout: 5s
+      start_period: 60s
+      retries: 3
+    restart: unless-stopped
+
 networks:
   keycloak-kafka-backbone:
     driver: bridge
