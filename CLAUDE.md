@@ -1,13 +1,36 @@
 
 <!-- BACKLOG.MD GUIDELINES START -->
-# Instructions for the usage of Backlog.md CLI Tool
+# Instructions for the usage of Backlog.md
 
-## Backlog.md: Comprehensive Project Management Tool via CLI
+## Backlog.md: Comprehensive Project Management Tool
 
 ### Assistant Objective
 
-Efficiently manage all project tasks, status, and documentation using the Backlog.md CLI, ensuring all project metadata
-remains fully synchronized and up-to-date.
+Efficiently manage all project tasks, status, and documentation using the Backlog.md MCP server (preferred) or CLI, ensuring all project metadata remains fully synchronized and up-to-date.
+
+### 🎯 IMPORTANT: MCP Tools First, CLI Second
+
+**✅ ALWAYS PREFER MCP TOOLS** for backlog operations:
+- `mcp__backlog__task_create` - Create tasks
+- `mcp__backlog__task_view` - View task details
+- `mcp__backlog__task_edit` - Edit tasks, ACs, plan, notes, status
+- `mcp__backlog__task_list` - List tasks with filters
+- `mcp__backlog__task_search` - Search tasks by content
+- `mcp__backlog__task_archive` - Archive tasks
+- `mcp__backlog__get_*` - Get guidance resources
+
+**Why MCP tools?**
+- Type-safe, structured input/output
+- Built-in validation
+- More reliable than bash commands
+- AI-friendly response formats
+- No shell quoting complexity
+
+**⚠️ Use bash CLI (`backlog task ...`) ONLY when:**
+- MCP tools are unavailable (rare)
+- Need features not exposed by MCP (very rare)
+
+See the `backlog-mcp-guide` skill for comprehensive examples.
 
 ### Core Capabilities
 
@@ -23,31 +46,34 @@ remains fully synchronized and up-to-date.
 
 ### Why This Matters to You (AI Agent)
 
-1. **Comprehensive system** - Full project management capabilities through CLI
-2. **The CLI is the interface** - All operations go through `backlog` commands
-3. **Unified interaction model** - You can use CLI for both reading (`backlog task 1 --plain`) and writing (
-   `backlog task edit 1`)
-4. **Metadata stays synchronized** - The CLI handles all the complex relationships
+1. **Comprehensive system** - Full project management capabilities
+2. **MCP is your primary interface** - Use MCP tools for all backlog operations
+3. **Type-safe interaction** - MCP tools provide structured, validated input/output
+4. **Fallback to CLI** - Use `backlog` CLI commands only when MCP is unavailable
+5. **Metadata stays synchronized** - Both MCP and CLI handle all the complex relationships
 
 ### Key Understanding
 
 - **Tasks** live in `backlog/tasks/` as `task-<id> - <title>.md` files
-- **You interact via CLI only**: `backlog task create`, `backlog task edit`, etc.
-- **Use `--plain` flag** for AI-friendly output when viewing/listing
-- **Never bypass the CLI** - It handles Git, metadata, file naming, and relationships
+- **You interact via MCP tools first**: `mcp__backlog__task_create`, `mcp__backlog__task_edit`, etc.
+- **Fallback to CLI**: `backlog task create`, `backlog task edit`, etc. (use `--plain` flag for AI-friendly output)
+- **Never bypass these interfaces** - They handle Git, metadata, file naming, and relationships
+- **Never edit task files directly** - Always use MCP tools or CLI
 
 ---
 
-# ⚠️ CRITICAL: NEVER EDIT TASK FILES DIRECTLY. Edit Only via CLI
+# ⚠️ CRITICAL: NEVER EDIT TASK FILES DIRECTLY
 
-**ALL task operations MUST use the Backlog.md CLI commands**
+**ALL task operations MUST use MCP tools (preferred) or CLI commands**
 
-- ✅ **DO**: Use `backlog task edit` and other CLI commands
-- ✅ **DO**: Use `backlog task create` to create new tasks
-- ✅ **DO**: Use `backlog task edit <id> --check-ac <index>` to mark acceptance criteria
+- ✅ **DO**: Use `mcp__backlog__task_edit` and other MCP tools (PREFERRED)
+- ✅ **DO**: Use `mcp__backlog__task_create` to create new tasks (PREFERRED)
+- ✅ **DO**: Use `mcp__backlog__task_edit` with `acceptanceCriteriaCheck` to mark ACs (PREFERRED)
+- ✅ **DO**: Use `backlog task edit` CLI commands as fallback
+- ✅ **DO**: Use `backlog task create` CLI commands as fallback
 - ❌ **DON'T**: Edit markdown files directly
 - ❌ **DON'T**: Manually change checkboxes in files
-- ❌ **DON'T**: Add or modify text in task files without using CLI
+- ❌ **DON'T**: Add or modify text in task files without using MCP/CLI
 
 **Why?** Direct file editing breaks metadata synchronization, Git tracking, and task relationships.
 
@@ -64,9 +90,10 @@ remains fully synchronized and up-to-date.
 
 ### 🔧 **ACTING** (How to change things)
 
-- **All task operations MUST use the Backlog.md CLI tool**
+- **All task operations MUST use MCP tools (preferred) or Backlog.md CLI**
+- **PREFER**: `mcp__backlog__task_*` tools for all operations
+- **FALLBACK**: `backlog` CLI commands (use `--plain` flag for AI-friendly output)
 - This ensures metadata is correctly updated and the project stays in sync
-- **Always use `--plain` flag** when listing or viewing tasks for AI-friendly text output
 
 ---
 
@@ -83,13 +110,37 @@ remains fully synchronized and up-to-date.
 4. Save the file
 ```
 
-### ✅ **CORRECT: Using CLI Commands**
+### ✅ **CORRECT: Using MCP Tools (PREFERRED)**
+
+```typescript
+// DO THIS (PREFERRED):
+// Mark AC #1 as complete
+mcp__backlog__task_edit({
+  id: "task-7",
+  acceptanceCriteriaCheck: [1]
+})
+
+// Add notes
+mcp__backlog__task_edit({
+  id: "task-7",
+  notesSet: "Implementation complete"
+})
+
+// Change status and assign (combined in one call)
+mcp__backlog__task_edit({
+  id: "task-7",
+  status: "In Progress",
+  assignee: ["@agent-k"]
+})
+```
+
+### ✅ **ACCEPTABLE: Using CLI Commands (Fallback)**
 
 ```bash
-# DO THIS INSTEAD:
+# DO THIS AS FALLBACK:
 backlog task edit 7 --check-ac 1  # Mark AC #1 as complete
 backlog task edit 7 --notes "Implementation complete"  # Add notes
-backlog task edit 7 -s "In Progress" -a @agent-k  # Multiple commands: change status and assign the task when you start working on the task
+backlog task edit 7 -s "In Progress" -a @agent-k  # Change status and assign
 ```
 
 ---
