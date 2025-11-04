@@ -5,7 +5,7 @@ status: In Progress
 assignee:
   - '@claude'
 created_date: '2025-11-04 14:33'
-updated_date: '2025-11-04 16:30'
+updated_date: '2025-11-04 16:34'
 labels:
   - backend
   - setup
@@ -21,10 +21,10 @@ Set up the base Quarkus project structure with all necessary dependencies for th
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Project builds successfully with Maven/Gradle
-- [ ] #2 All Sprint 1 dependencies are included in pom.xml/build.gradle
-- [ ] #3 Basic application.properties configuration file exists
-- [ ] #4 Project structure follows Quarkus conventions
+- [x] #1 Project builds successfully with Maven/Gradle
+- [x] #2 All Sprint 1 dependencies are included in pom.xml/build.gradle
+- [x] #3 Basic application.properties configuration file exists
+- [x] #4 Project structure follows Quarkus conventions
 <!-- AC:END -->
 
 ## Implementation Plan
