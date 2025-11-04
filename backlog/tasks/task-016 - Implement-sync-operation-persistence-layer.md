@@ -1,9 +1,11 @@
 ---
 id: task-016
 title: Implement sync operation persistence layer
-status: To Do
-assignee: []
+status: In Progress
+assignee:
+  - '@claude'
 created_date: '2025-11-04 18:33'
+updated_date: '2025-11-04 20:57'
 labels:
   - backend
   - database
