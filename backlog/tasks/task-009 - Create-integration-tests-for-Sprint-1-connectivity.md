@@ -5,7 +5,7 @@ status: Done
 assignee:
   - '@claude'
 created_date: '2025-11-04 14:34'
-updated_date: '2025-11-04 18:11'
+updated_date: '2025-11-04 18:15'
 labels:
   - backend
   - testing
@@ -109,4 +109,12 @@ Successfully implemented integration tests for Sprint 1 connectivity using Testc
 - Current implementation validates health check logic through direct service connectivity
 - Consider adding @TestProfile for test-specific configurations
 - Integration tests can be extended to cover error scenarios and edge cases
+
+## CRITICAL CORRECTION
+
+**IMPORTANT**: Updated to use correct versions:
+- Apache Kafka 4.1.0 (NOT Confluent Kafka)
+- Keycloak 26.4.7 (latest 26.4.x)
+
+These are the ONLY approved versions for this project.
 <!-- SECTION:NOTES:END -->
