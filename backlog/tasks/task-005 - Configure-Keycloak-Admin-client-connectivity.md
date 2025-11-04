@@ -1,9 +1,11 @@
 ---
 id: task-005
 title: Configure Keycloak Admin client connectivity
-status: To Do
-assignee: []
+status: In Progress
+assignee:
+  - '@claude'
 created_date: '2025-11-04 14:34'
+updated_date: '2025-11-04 17:16'
 labels:
   - backend
   - keycloak
@@ -28,3 +30,14 @@ Set up Keycloak Admin client (Java Admin Client or REST client with WebClient) w
 - [ ] #6 Connection errors are properly logged with context
 - [ ] #7 Keycloak client is included in health check status
 <!-- AC:END -->
+
+## Implementation Plan
+
+<!-- SECTION:PLAN:BEGIN -->
+1. Create Keycloak configuration class to read environment variables (KC_BASE_URL, KC_REALM, KC_CLIENT_ID, KC_CLIENT_SECRET)
+2. Create Keycloak Admin client producer bean with CDI
+3. Implement OAuth2 client credentials flow authentication
+4. Add automatic token refresh mechanism
+5. Update KeycloakHealthCheck to validate admin client connectivity (fetch realm info)
+6. Test connectivity with testing infrastructure (Keycloak at https://localhost:57003)
+<!-- SECTION:PLAN:END -->
