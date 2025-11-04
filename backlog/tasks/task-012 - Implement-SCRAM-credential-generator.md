@@ -1,7 +1,7 @@
 ---
 id: task-012
 title: Implement SCRAM credential generator
-status: In Progress
+status: Done
 assignee:
   - '@claude'
 created_date: '2025-11-04 18:33'
