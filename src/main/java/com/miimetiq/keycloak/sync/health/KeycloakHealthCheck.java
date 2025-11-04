@@ -1,83 +1,66 @@
 package com.miimetiq.keycloak.sync.health;
 
+import com.miimetiq.keycloak.sync.keycloak.KeycloakConfig;
 import jakarta.enterprise.context.ApplicationScoped;
-import org.eclipse.microprofile.config.inject.ConfigProperty;
+import jakarta.inject.Inject;
 import org.eclipse.microprofile.health.HealthCheck;
 import org.eclipse.microprofile.health.HealthCheckResponse;
 import org.eclipse.microprofile.health.Readiness;
 import org.jboss.logging.Logger;
+import org.keycloak.admin.client.Keycloak;
+import org.keycloak.representations.idm.RealmRepresentation;
 
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.TrustManager;
-import javax.net.ssl.X509TrustManager;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.security.cert.X509Certificate;
-
+/**
+ * Health check for Keycloak Admin client connectivity.
+ * Validates that the client can authenticate and interact with the Keycloak API.
+ */
 @Readiness
 @ApplicationScoped
 public class KeycloakHealthCheck implements HealthCheck {
 
     private static final Logger LOG = Logger.getLogger(KeycloakHealthCheck.class);
 
-    @ConfigProperty(name = "keycloak.url")
-    String keycloakUrl;
+    @Inject
+    Keycloak keycloak;
+
+    @Inject
+    KeycloakConfig config;
 
     @Override
     public HealthCheckResponse call() {
         try {
-            // Create a trust manager that accepts all certificates (for dev/testing)
-            TrustManager[] trustAllCerts = new TrustManager[]{
-                new X509TrustManager() {
-                    public X509Certificate[] getAcceptedIssuers() { return null; }
-                    public void checkClientTrusted(X509Certificate[] certs, String authType) { }
-                    public void checkServerTrusted(X509Certificate[] certs, String authType) { }
-                }
-            };
+            // Fetch realm information to validate connectivity and authentication
+            RealmRepresentation realm = keycloak.realm(config.realm()).toRepresentation();
 
-            SSLContext sc = SSLContext.getInstance("TLS");
-            sc.init(null, trustAllCerts, new java.security.SecureRandom());
-
-            // Check Keycloak health endpoint
-            URL url = new URL(keycloakUrl + "/health/ready");
-            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-
-            if (connection instanceof javax.net.ssl.HttpsURLConnection) {
-                ((javax.net.ssl.HttpsURLConnection) connection).setSSLSocketFactory(sc.getSocketFactory());
-                ((javax.net.ssl.HttpsURLConnection) connection).setHostnameVerifier((hostname, session) -> true);
-            }
-
-            connection.setRequestMethod("GET");
-            connection.setConnectTimeout(5000);
-            connection.setReadTimeout(5000);
-
-            int responseCode = connection.getResponseCode();
-            connection.disconnect();
-
-            if (responseCode == 200) {
-                LOG.debug("Keycloak health check passed");
+            if (realm != null && realm.getRealm() != null) {
+                LOG.debug("Keycloak health check passed - realm info retrieved successfully");
                 return HealthCheckResponse
-                        .named("keycloak")
+                        .named("keycloak-admin-client")
                         .up()
-                        .withData("url", keycloakUrl)
-                        .withData("status_code", responseCode)
+                        .withData("url", config.url())
+                        .withData("realm", realm.getRealm())
+                        .withData("realm_enabled", realm.isEnabled())
+                        .withData("client_id", config.clientId())
                         .build();
             } else {
-                LOG.warn("Keycloak health check returned non-200 status: " + responseCode);
+                LOG.warn("Keycloak health check failed - realm info is null");
                 return HealthCheckResponse
-                        .named("keycloak")
+                        .named("keycloak-admin-client")
                         .down()
-                        .withData("url", keycloakUrl)
-                        .withData("status_code", responseCode)
+                        .withData("url", config.url())
+                        .withData("realm", config.realm())
+                        .withData("error", "Realm information is null")
                         .build();
             }
         } catch (Exception e) {
-            LOG.error("Keycloak health check failed", e);
+            LOG.error("Keycloak health check failed - unable to connect or authenticate", e);
             return HealthCheckResponse
-                    .named("keycloak")
+                    .named("keycloak-admin-client")
                     .down()
-                    .withData("url", keycloakUrl)
-                    .withData("error", e.getMessage())
+                    .withData("url", config.url())
+                    .withData("realm", config.realm())
+                    .withData("client_id", config.clientId())
+                    .withData("error", e.getClass().getSimpleName() + ": " + e.getMessage())
                     .build();
         }
     }
