@@ -43,3 +43,12 @@ nb-configuration.xml
 /.quarkus/cli/plugins/
 # TLS Certificates
 .certs/
+
+# Development logs and databases
+*.log
+sync-agent.db
+*.db
+
+# Credentials
+.credentials/
+*/.credentials/
