@@ -5,7 +5,7 @@ status: In Progress
 assignee:
   - '@claude'
 created_date: '2025-11-04 14:34'
-updated_date: '2025-11-04 17:52'
+updated_date: '2025-11-04 18:10'
 labels:
   - backend
   - testing
@@ -21,13 +21,13 @@ Implement integration tests that validate connectivity to Kafka, Keycloak, and S
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Integration test validates Kafka AdminClient connection
-- [ ] #2 Integration test validates Keycloak Admin client authentication
-- [ ] #3 Integration test validates SQLite database operations
+- [x] #1 Integration test validates Kafka AdminClient connection
+- [x] #2 Integration test validates Keycloak Admin client authentication
+- [x] #3 Integration test validates SQLite database operations
 - [ ] #4 Integration test validates /healthz endpoint returns correct status
 - [ ] #5 Integration test validates /readyz endpoint returns correct status
-- [ ] #6 Integration test validates /metrics endpoint returns Prometheus format
-- [ ] #7 Tests use Testcontainers or equivalent for real dependencies
+- [x] #6 Integration test validates /metrics endpoint returns Prometheus format
+- [x] #7 Tests use Testcontainers or equivalent for real dependencies
 - [ ] #8 All tests pass in CI/CD pipeline
 <!-- AC:END -->
 
