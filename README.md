@@ -1,6 +1,6 @@
 # Keycloak ➡️ Kafka Sync Agent
 
-A Quarkus-based service that synchronizes Keycloak user data to Kafka topics, providing real-time user event streaming and periodic reconciliation.
+The Keycloak → Kafka Sync Agent acts as a real-time identity and authorization bridge. Built on Quarkus, it synchronizes users, clients, and roles from Keycloak into Kafka’s metadata store—managing SCRAM verifiers and ACLs dynamically, recording every operation in SQLite, and exposing telemetry and a dashboard for full operational transparency.
 
 ## Features
 
