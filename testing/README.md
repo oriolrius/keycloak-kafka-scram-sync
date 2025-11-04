@@ -35,11 +35,19 @@ make clean
 
 ```bash
 # Required tools
-ckms          # Cosmian KMS CLI - https://github.com/Cosmian/kms/releases
+ckms          # Cosmian KMS CLI - included in ../contrib/ckms or https://github.com/Cosmian/kms/releases
+              # Add to PATH: export PATH="$HOME/.local/bin:$PATH"
 keytool       # Java keystore tool (comes with JDK)
 openssl       # SSL/TLS toolkit
 docker        # Container runtime
 make          # Build automation
+```
+
+**Note**: The `ckms` binary is provided in `../contrib/ckms`. To use it globally, create a symlink:
+```bash
+mkdir -p ~/.local/bin
+ln -sf $(pwd)/../contrib/ckms ~/.local/bin/ckms
+export PATH="$HOME/.local/bin:$PATH"
 ```
 
 ## Architecture

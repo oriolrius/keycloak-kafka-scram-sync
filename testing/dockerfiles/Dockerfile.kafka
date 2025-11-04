@@ -1,0 +1,10 @@
+FROM apache/kafka:4.1.0
+
+# Install netcat for health checks
+USER root
+RUN apk add --no-cache netcat-openbsd
+
+# Switch back to appuser
+USER appuser
+
+# Keep the original entrypoint

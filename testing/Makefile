@@ -13,10 +13,9 @@ KEYCLOAK_HOSTNAME := keycloak.$(DOMAIN)
 KAFKA_HOSTNAME := kafka.$(DOMAIN)
 AGENT_HOSTNAME := agent.$(DOMAIN)
 
-# Service URLs
+# Service URLs (HTTPS only)
 KMS_URL := http://localhost:57001
-KEYCLOAK_URL := http://localhost:57002
-KAFKA_PLAINTEXT := localhost:57004
+KEYCLOAK_URL := https://localhost:57003
 KAFKA_SSL := localhost:57005
 
 # Network
@@ -85,12 +84,12 @@ start:
 	@echo ""
 	@echo "✅ Environment started!"
 	@echo ""
-	@echo "Services available at:"
+	@echo "Services available at (HTTPS only):"
 	@echo "  - KMS:      $(KMS_URL) ($(KMS_HOSTNAME))"
 	@echo "  - Keycloak: $(KEYCLOAK_URL) ($(KEYCLOAK_HOSTNAME)) [admin/$(CERT_PASSWORD)]"
-	@echo "  - Kafka:    $(KAFKA_PLAINTEXT) ($(KAFKA_HOSTNAME))"
+	@echo "  - Kafka:    $(KAFKA_SSL) SSL ($(KAFKA_HOSTNAME))"
 	@echo ""
-	@echo "Add to /etc/hosts:"
+	@echo "Hostnames configured in /etc/hosts:"
 	@echo "  127.0.0.1  $(KMS_HOSTNAME) $(KEYCLOAK_HOSTNAME) $(KAFKA_HOSTNAME) $(AGENT_HOSTNAME)"
 	@echo ""
 	@echo "Run 'make health' to check service health"
@@ -110,71 +109,82 @@ certs:
 	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 	@echo ""
 	@# Check prerequisites
-	@command -v ckms >/dev/null 2>&1 || (echo "❌ ERROR: ckms CLI not found! Install from https://github.com/Cosmian/kms/releases"; exit 1)
+	@command -v ckms >/dev/null 2>&1 || (echo "❌ ERROR: ckms CLI not found! Try: export PATH=\"\$$HOME/.local/bin:\$$PATH\""; exit 1)
 	@command -v keytool >/dev/null 2>&1 || (echo "❌ ERROR: keytool not found! Install Java JRE/JDK"; exit 1)
 	@command -v openssl >/dev/null 2>&1 || (echo "❌ ERROR: openssl not found!"; exit 1)
 	@# Check KMS is running
-	@curl -sf $(KMS_URL)/health >/dev/null || (echo "❌ ERROR: KMS not running! Run: make kms-only"; exit 1)
+	@curl -sf $(KMS_URL)/version >/dev/null || (echo "❌ ERROR: KMS not running! Run: make kms-only"; exit 1)
 	@echo "✓ Prerequisites OK"
 	@echo ""
-	@# Configure ckms
+	@# Configure ckms and create certificates
 	@mkdir -p $(CERT_DIR)
-	@echo '{"kms_server_url":"$(KMS_URL)","ssl_client_pkcs12_path":null,"ssl_client_pkcs12_password":null,"accept_invalid_certs":false}' > kms-config.json
-	@export KMS_CLI_CONF_PATH=$(PWD)/kms-config.json && \
-	echo "Step 1/4: Creating Root CA..." && \
-	(ckms certificates list 2>/dev/null | grep -q "ca-root" && (ckms certificates revoke ca-root 2>/dev/null || true; ckms certificates destroy ca-root 2>/dev/null || true) || true) && \
-	ckms certificates certify \
+	@mkdir -p $(CERT_DIR)/.credentials
+	@echo "$(CERT_PASSWORD)" > $(CERT_DIR)/.credentials/keystore_password
+	@echo "$(CERT_PASSWORD)" > $(CERT_DIR)/.credentials/truststore_password
+	@echo "$(CERT_PASSWORD)" > $(CERT_DIR)/.credentials/sslkey_password
+	@echo "Step 1/4: Creating Root CA..." && \
+	(ckms --kms-url $(KMS_URL) kms certificates revoke --certificate-id ca-root 2>/dev/null || true) && \
+	(ckms --kms-url $(KMS_URL) kms certificates destroy --certificate-id ca-root 2>/dev/null || true) && \
+	ckms --kms-url $(KMS_URL) kms certificates certify \
 		--certificate-id ca-root \
+		--generate-key-pair \
 		--subject-name "CN=Testing Root CA,O=$(CERT_ORG),C=$(CERT_COUNTRY)" \
 		--algorithm rsa4096 \
-		--certificate-extensions $(CERT_DIR)/ca.ext \
 		--days 3650 \
-		--self-sign && \
-	ckms certificates export --certificate-id ca-root --format pem $(CERT_DIR)/ca-root.pem && \
+		--tag testing-env && \
+	ckms --kms-url $(KMS_URL) kms certificates export --certificate-id ca-root --format pem $(CERT_DIR)/ca-root.pem && \
 	echo "✓ Root CA created" && \
 	echo "" && \
 	echo "Step 2/4: Creating Keycloak certificate..." && \
-	(ckms certificates list 2>/dev/null | grep -q "keycloak_server" && (ckms certificates revoke keycloak_server 2>/dev/null || true; ckms certificates destroy keycloak_server 2>/dev/null || true) || true) && \
-	ckms certificates certify \
+	(ckms --kms-url $(KMS_URL) kms certificates revoke --certificate-id keycloak_server 2>/dev/null || true) && \
+	(ckms --kms-url $(KMS_URL) kms certificates destroy --certificate-id keycloak_server 2>/dev/null || true) && \
+	ckms --kms-url $(KMS_URL) kms certificates certify \
 		--certificate-id keycloak_server \
+		--issuer-certificate-id ca-root \
+		--generate-key-pair \
 		--subject-name "CN=$(KEYCLOAK_HOSTNAME),O=$(CERT_ORG),C=$(CERT_COUNTRY)" \
 		--algorithm rsa2048 \
-		--certificate-extensions $(CERT_DIR)/keycloak.ext \
 		--days 365 \
-		ca-root && \
-	ckms certificates export --certificate-id keycloak_server --format pkcs12 --pkcs12-password $(CERT_PASSWORD) $(CERT_DIR)/keycloak_server.p12 && \
-	ckms certificates export --certificate-id keycloak_server --format pem $(CERT_DIR)/keycloak_server.pem && \
+		--tag testing-env && \
+	ckms --kms-url $(KMS_URL) kms certificates export --certificate-id keycloak_server --format pkcs12 --pkcs12-password $(CERT_PASSWORD) $(CERT_DIR)/keycloak_server.p12 && \
+	ckms --kms-url $(KMS_URL) kms certificates export --certificate-id keycloak_server --format pem $(CERT_DIR)/keycloak_server.pem && \
 	openssl pkcs12 -in $(CERT_DIR)/keycloak_server.p12 -passin pass:$(CERT_PASSWORD) -nocerts -nodes -out $(CERT_DIR)/keycloak.key && \
 	openssl pkcs12 -in $(CERT_DIR)/keycloak_server.p12 -passin pass:$(CERT_PASSWORD) -nokeys -clcerts -out $(CERT_DIR)/keycloak.crt && \
 	echo "✓ Keycloak certificate created" && \
 	echo "" && \
 	echo "Step 3/4: Creating Kafka certificate..." && \
-	(ckms certificates list 2>/dev/null | grep -q "kafka_broker" && (ckms certificates revoke kafka_broker 2>/dev/null || true; ckms certificates destroy kafka_broker 2>/dev/null || true) || true) && \
-	ckms certificates certify \
+	(ckms --kms-url $(KMS_URL) kms certificates revoke --certificate-id kafka_broker 2>/dev/null || true) && \
+	(ckms --kms-url $(KMS_URL) kms certificates destroy --certificate-id kafka_broker 2>/dev/null || true) && \
+	ckms --kms-url $(KMS_URL) kms certificates certify \
 		--certificate-id kafka_broker \
+		--issuer-certificate-id ca-root \
+		--generate-key-pair \
 		--subject-name "CN=$(KAFKA_HOSTNAME),O=$(CERT_ORG),C=$(CERT_COUNTRY)" \
 		--algorithm rsa2048 \
-		--certificate-extensions $(CERT_DIR)/kafka.ext \
 		--days 365 \
-		ca-root && \
-	ckms certificates export --certificate-id kafka_broker --format pkcs12 --pkcs12-password $(CERT_PASSWORD) $(CERT_DIR)/kafka_broker.p12 && \
-	ckms certificates export --certificate-id kafka_broker --format pem $(CERT_DIR)/kafka_broker.pem && \
-	openssl pkcs12 -export -in $(CERT_DIR)/ca-root.pem -nokeys -out $(CERT_DIR)/kafka_truststore.p12 -passout pass:$(CERT_PASSWORD) -name ca-root && \
+		--tag testing-env && \
+	ckms --kms-url $(KMS_URL) kms certificates export --certificate-id kafka_broker --format pkcs12 --pkcs12-password $(CERT_PASSWORD) $(CERT_DIR)/kafka_broker.p12 && \
+	ckms --kms-url $(KMS_URL) kms certificates export --certificate-id kafka_broker --format pem $(CERT_DIR)/kafka_broker.pem && \
 	keytool -importkeystore -srckeystore $(CERT_DIR)/kafka_broker.p12 -srcstoretype PKCS12 -srcstorepass $(CERT_PASSWORD) -destkeystore $(CERT_DIR)/kafka_broker.keystore.jks -deststoretype JKS -deststorepass $(CERT_PASSWORD) -noprompt && \
-	keytool -importkeystore -srckeystore $(CERT_DIR)/kafka_truststore.p12 -srcstoretype PKCS12 -srcstorepass $(CERT_PASSWORD) -destkeystore $(CERT_DIR)/kafka.truststore.jks -deststoretype JKS -deststorepass $(CERT_PASSWORD) -noprompt && \
+	keytool -import -trustcacerts -alias ca-root -file $(CERT_DIR)/ca-root.pem -keystore $(CERT_DIR)/kafka.truststore.jks -storepass $(CERT_PASSWORD) -noprompt && \
+	echo "$(CERT_PASSWORD)" > $(CERT_DIR)/kafka_keystore_creds && \
+	echo "$(CERT_PASSWORD)" > $(CERT_DIR)/kafka_ssl_key_creds && \
+	echo "$(CERT_PASSWORD)" > $(CERT_DIR)/kafka_truststore_creds && \
 	echo "✓ Kafka certificate created" && \
 	echo "" && \
 	echo "Step 4/4: Creating Sync Agent certificate..." && \
-	(ckms certificates list 2>/dev/null | grep -q "sync_agent" && (ckms certificates revoke sync_agent 2>/dev/null || true; ckms certificates destroy sync_agent 2>/dev/null || true) || true) && \
-	ckms certificates certify \
+	(ckms --kms-url $(KMS_URL) kms certificates revoke --certificate-id sync_agent 2>/dev/null || true) && \
+	(ckms --kms-url $(KMS_URL) kms certificates destroy --certificate-id sync_agent 2>/dev/null || true) && \
+	ckms --kms-url $(KMS_URL) kms certificates certify \
 		--certificate-id sync_agent \
+		--issuer-certificate-id ca-root \
+		--generate-key-pair \
 		--subject-name "CN=$(AGENT_HOSTNAME),O=$(CERT_ORG),C=$(CERT_COUNTRY)" \
 		--algorithm rsa2048 \
-		--certificate-extensions $(CERT_DIR)/agent.ext \
 		--days 365 \
-		ca-root && \
-	ckms certificates export --certificate-id sync_agent --format pkcs12 --pkcs12-password $(CERT_PASSWORD) $(CERT_DIR)/sync_agent.p12 && \
-	ckms certificates export --certificate-id sync_agent --format pem $(CERT_DIR)/sync_agent.pem && \
+		--tag testing-env && \
+	ckms --kms-url $(KMS_URL) kms certificates export --certificate-id sync_agent --format pkcs12 --pkcs12-password $(CERT_PASSWORD) $(CERT_DIR)/sync_agent.p12 && \
+	ckms --kms-url $(KMS_URL) kms certificates export --certificate-id sync_agent --format pem $(CERT_DIR)/sync_agent.pem && \
 	echo "✓ Agent certificate created" && \
 	echo "" && \
 	echo "Verifying certificates..." && \
@@ -252,11 +262,11 @@ health:
 	@echo "Health Check"
 	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 	@echo -n "KMS:       "
-	@curl -sf $(KMS_URL)/health >/dev/null 2>&1 && echo "✓ OK" || echo "✗ FAILED"
+	@curl -sf $(KMS_URL)/version >/dev/null 2>&1 && echo "✓ OK" || echo "✗ FAILED"
 	@echo -n "Keycloak:  "
-	@curl -sf $(KEYCLOAK_URL)/health/ready >/dev/null 2>&1 && echo "✓ OK" || echo "✗ FAILED"
+	@curl -kfs $(KEYCLOAK_URL)/ >/dev/null 2>&1 && echo "✓ OK (HTTPS)" || echo "✗ FAILED"
 	@echo -n "Kafka:     "
-	@docker exec kafka kafka-broker-api-versions --bootstrap-server localhost:9092 >/dev/null 2>&1 && echo "✓ OK" || echo "✗ FAILED"
+	@docker compose exec -T kafka nc -z localhost 9093 >/dev/null 2>&1 && echo "✓ OK (SSL)" || echo "✗ FAILED"
 	@echo ""
 	@echo -n "Network:   "
 	@docker network inspect $(NETWORK_NAME) >/dev/null 2>&1 && echo "✓ OK" || echo "✗ FAILED"

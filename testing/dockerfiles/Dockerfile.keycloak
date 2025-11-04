@@ -1,0 +1,11 @@
+FROM quay.io/keycloak/keycloak:26.4
+
+# Download static curl binary for health checks
+USER root
+ADD https://github.com/moparisthebest/static-curl/releases/download/v8.11.1/curl-amd64 /usr/local/bin/curl
+RUN chmod +x /usr/local/bin/curl
+
+# Switch back to keycloak user
+USER 1000
+
+# Keep the original entrypoint

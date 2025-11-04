@@ -10,24 +10,17 @@ services:
       - ${KMS_DATA_DIR:-./data/kms}:/root/cosmian-kms
     networks:
       - ${NETWORK_NAME:-keycloak-kafka-backbone}
-    healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:${KMS_CONTAINER_PORT:-9998}/health || exit 1"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 10s
     restart: unless-stopped
 
-  # Keycloak - Identity Provider (with SQLite)
+  # Keycloak - Identity Provider (with dev-file)
   keycloak:
-    image: ${KEYCLOAK_IMAGE:-quay.io/keycloak/keycloak:26.0}
+    image: ${KEYCLOAK_IMAGE:-quay.io/keycloak/keycloak:26.4}
     hostname: ${KEYCLOAK_HOSTNAME:-keycloak.example}
     container_name: keycloak
     command: start-dev
     environment:
-      # Database configuration (SQLite)
-      KC_DB: ${KC_DB:-sqlite}
-      KC_DB_URL: ${KC_DB_URL:-jdbc:sqlite:/opt/keycloak/data/keycloak.db}
+      # Database configuration (dev-file for development)
+      KC_DB: ${KC_DB:-dev-file}
 
       # Admin credentials
       KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN:-admin}
@@ -38,47 +31,40 @@ services:
       KC_HOSTNAME_STRICT: ${KC_HOSTNAME_STRICT:-false}
       KC_HOSTNAME_STRICT_HTTPS: ${KC_HOSTNAME_STRICT_HTTPS:-false}
 
-      # HTTP configuration
-      KC_HTTP_ENABLED: ${KC_HTTP_ENABLED:-true}
-      KC_HTTP_PORT: ${KEYCLOAK_HTTP_CONTAINER_PORT:-8080}
+      # HTTP configuration (disabled for HTTPS-only)
+      KC_HTTP_ENABLED: ${KC_HTTP_ENABLED:-false}
 
-      # HTTPS configuration (will be enabled after certificate setup)
-      # KC_HTTPS_ENABLED: ${KC_HTTPS_ENABLED:-true}
-      # KC_HTTPS_PORT: ${KEYCLOAK_HTTPS_CONTAINER_PORT:-8443}
-      # KC_HTTPS_CERTIFICATE_FILE: ${KC_HTTPS_CERTIFICATE_FILE:-/opt/keycloak/conf/certs/keycloak.crt}
-      # KC_HTTPS_CERTIFICATE_KEY_FILE: ${KC_HTTPS_CERTIFICATE_KEY_FILE:-/opt/keycloak/conf/certs/keycloak.key}
+      # HTTPS configuration
+      KC_HTTPS_ENABLED: ${KC_HTTPS_ENABLED:-true}
+      KC_HTTPS_PORT: ${KEYCLOAK_HTTPS_CONTAINER_PORT:-8443}
+      KC_HTTPS_CERTIFICATE_FILE: ${KC_HTTPS_CERTIFICATE_FILE:-/opt/keycloak/conf/certs/keycloak.crt}
+      KC_HTTPS_CERTIFICATE_KEY_FILE: ${KC_HTTPS_CERTIFICATE_KEY_FILE:-/opt/keycloak/conf/certs/keycloak.key}
 
       # Development mode
       KC_LOG_LEVEL: ${KC_LOG_LEVEL:-INFO}
       KC_METRICS_ENABLED: ${KC_METRICS_ENABLED:-true}
       KC_HEALTH_ENABLED: ${KC_HEALTH_ENABLED:-true}
     ports:
-      - "${KEYCLOAK_HTTP_HOST_PORT:-57002}:${KEYCLOAK_HTTP_CONTAINER_PORT:-8080}"
-      # - "${KEYCLOAK_HTTPS_HOST_PORT:-57003}:${KEYCLOAK_HTTPS_CONTAINER_PORT:-8443}"  # Uncomment after SSL setup
+      - "${KEYCLOAK_HTTPS_HOST_PORT:-57003}:${KEYCLOAK_HTTPS_CONTAINER_PORT:-8443}"
     volumes:
       - ${CERTS_DIR:-./certs}:/opt/keycloak/conf/certs:ro
       - ${KEYCLOAK_DATA_DIR:-./data/keycloak}:/opt/keycloak/data
     depends_on:
-      kms:
-        condition: service_healthy
+      - kms
     networks:
       - ${NETWORK_NAME:-keycloak-kafka-backbone}
-    healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:${KEYCLOAK_HTTP_CONTAINER_PORT:-8080}/health/ready || exit 1"]
-      interval: 15s
-      timeout: 5s
-      retries: 10
-      start_period: 60s
     restart: unless-stopped
 
   # Apache Kafka - Message Broker (KRaft mode)
   kafka:
-    image: ${KAFKA_IMAGE:-apache/kafka:4.1.0}
+    build:
+      context: .
+      dockerfile: dockerfiles/Dockerfile.kafka
+    image: kafka-testing:latest
     hostname: ${KAFKA_HOSTNAME:-kafka.example}
     container_name: kafka
     ports:
-      - "${KAFKA_PLAINTEXT_HOST_PORT:-57004}:${KAFKA_PLAINTEXT_CONTAINER_PORT:-9092}"  # PLAINTEXT (internal access from host)
-      - "${KAFKA_SSL_HOST_PORT:-57005}:${KAFKA_SSL_CONTAINER_PORT:-9093}"  # SSL (external secure access)
+      - "${KAFKA_SSL_HOST_PORT:-57005}:${KAFKA_SSL_CONTAINER_PORT:-9093}"  # SSL only
     environment:
       # KRaft configuration
       KAFKA_NODE_ID: ${KAFKA_NODE_ID:-1}
@@ -87,9 +73,9 @@ services:
       KAFKA_CONTROLLER_LISTENER_NAMES: ${KAFKA_CONTROLLER_LISTENER_NAMES:-CONTROLLER}
       CLUSTER_ID: ${CLUSTER_ID:-MkU3OEVBNTcwNTJENDM2Qk}
 
-      # Listener configuration
-      KAFKA_LISTENERS: ${KAFKA_LISTENERS:-PLAINTEXT://:9092,CONTROLLER://:29093,SSL://:9093}
-      KAFKA_ADVERTISED_LISTENERS: ${KAFKA_ADVERTISED_LISTENERS:-PLAINTEXT://kafka.example:9092,SSL://kafka.example:9093}
+      # Listener configuration (SSL for external, PLAINTEXT for inter-broker)
+      KAFKA_LISTENERS: ${KAFKA_LISTENERS:-PLAINTEXT://:9092,SSL://:9093,CONTROLLER://:29093}
+      KAFKA_ADVERTISED_LISTENERS: ${KAFKA_ADVERTISED_LISTENERS:-PLAINTEXT://localhost:9092,SSL://kafka.example:9093}
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: ${KAFKA_LISTENER_SECURITY_PROTOCOL_MAP:-PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT,SSL:SSL}
       KAFKA_INTER_BROKER_LISTENER_NAME: ${KAFKA_INTER_BROKER_LISTENER_NAME:-PLAINTEXT}
 
@@ -102,15 +88,14 @@ services:
       # Storage
       KAFKA_LOG_DIRS: ${KAFKA_LOG_DIRS:-/var/lib/kafka/data}
 
-      # SSL configuration (will be enabled after certificate setup)
-      # Uncomment these after generating certificates
-      # KAFKA_SSL_KEYSTORE_FILENAME: ${KAFKA_SSL_KEYSTORE_FILENAME:-kafka_broker.keystore.jks}
-      # KAFKA_SSL_KEYSTORE_CREDENTIALS: ${KAFKA_SSL_KEYSTORE_CREDENTIALS:-kafka_keystore_creds}
-      # KAFKA_SSL_KEY_CREDENTIALS: ${KAFKA_SSL_KEY_CREDENTIALS:-kafka_ssl_key_creds}
-      # KAFKA_SSL_TRUSTSTORE_FILENAME: ${KAFKA_SSL_TRUSTSTORE_FILENAME:-kafka.truststore.jks}
-      # KAFKA_SSL_TRUSTSTORE_CREDENTIALS: ${KAFKA_SSL_TRUSTSTORE_CREDENTIALS:-kafka_truststore_creds}
-      # KAFKA_SSL_CLIENT_AUTH: ${KAFKA_SSL_CLIENT_AUTH:-none}
-      # KAFKA_SSL_ENDPOINT_IDENTIFICATION_ALGORITHM: ${KAFKA_SSL_ENDPOINT_IDENTIFICATION_ALGORITHM:-}
+      # SSL configuration
+      KAFKA_SSL_KEYSTORE_FILENAME: ${KAFKA_SSL_KEYSTORE_FILENAME:-kafka_broker.keystore.jks}
+      KAFKA_SSL_KEYSTORE_CREDENTIALS: ${KAFKA_SSL_KEYSTORE_CREDENTIALS:-kafka_keystore_creds}
+      KAFKA_SSL_KEY_CREDENTIALS: ${KAFKA_SSL_KEY_CREDENTIALS:-kafka_ssl_key_creds}
+      KAFKA_SSL_TRUSTSTORE_FILENAME: ${KAFKA_SSL_TRUSTSTORE_FILENAME:-kafka.truststore.jks}
+      KAFKA_SSL_TRUSTSTORE_CREDENTIALS: ${KAFKA_SSL_TRUSTSTORE_CREDENTIALS:-kafka_truststore_creds}
+      KAFKA_SSL_CLIENT_AUTH: ${KAFKA_SSL_CLIENT_AUTH:-none}
+      KAFKA_SSL_ENDPOINT_IDENTIFICATION_ALGORITHM: ${KAFKA_SSL_ENDPOINT_IDENTIFICATION_ALGORITHM:-}
     volumes:
       - ${CERTS_DIR:-./certs}/kafka_broker.keystore.jks:/etc/kafka/secrets/kafka_broker.keystore.jks:ro
       - ${CERTS_DIR:-./certs}/kafka.truststore.jks:/etc/kafka/secrets/kafka.truststore.jks:ro
@@ -119,16 +104,9 @@ services:
       - ${CERTS_DIR:-./certs}/kafka_truststore_creds:/etc/kafka/secrets/kafka_truststore_creds:ro
       - ${KAFKA_DATA_DIR:-./data/kafka}:/var/lib/kafka/data
     depends_on:
-      kms:
-        condition: service_healthy
+      - kms
     networks:
       - ${NETWORK_NAME:-keycloak-kafka-backbone}
-    healthcheck:
-      test: ["CMD-SHELL", "kafka-broker-api-versions --bootstrap-server localhost:${KAFKA_PLAINTEXT_CONTAINER_PORT:-9092} || exit 1"]
-      interval: 10s
-      timeout: 10s
-      retries: 5
-      start_period: 30s
     restart: unless-stopped
 
 networks:
