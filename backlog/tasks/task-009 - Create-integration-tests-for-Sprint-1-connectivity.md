@@ -1,9 +1,11 @@
 ---
 id: task-009
 title: Create integration tests for Sprint 1 connectivity
-status: To Do
-assignee: []
+status: In Progress
+assignee:
+  - '@claude'
 created_date: '2025-11-04 14:34'
+updated_date: '2025-11-04 17:52'
 labels:
   - backend
   - testing
