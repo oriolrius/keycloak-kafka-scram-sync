@@ -1,9 +1,11 @@
 ---
 id: task-033
 title: Implement space-based retention purge logic
-status: To Do
-assignee: []
+status: In Progress
+assignee:
+  - '@claude'
 created_date: '2025-11-05 06:17'
+updated_date: '2025-11-05 06:26'
 labels:
   - sprint-3
   - retention
