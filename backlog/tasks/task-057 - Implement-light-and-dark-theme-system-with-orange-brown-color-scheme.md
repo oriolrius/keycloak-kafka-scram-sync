@@ -5,7 +5,7 @@ status: In Progress
 assignee:
   - '@assistant'
 created_date: '2025-11-05 21:06'
-updated_date: '2025-11-05 21:06'
+updated_date: '2025-11-05 21:07'
 labels:
   - frontend
   - ui
@@ -24,10 +24,10 @@ Add support for light and dark themes with a toggle. Dark theme should use orang
 <!-- AC:BEGIN -->
 - [x] #1 Dark theme uses orange (#f97316 or similar) for text and UI accents
 - [x] #2 Dark theme uses dark brown (#3e2723 or similar) for backgrounds and components
-- [ ] #3 Theme toggle component is implemented and accessible
-- [ ] #4 Theme preference is persisted to localStorage
-- [ ] #5 Theme changes apply smoothly across all pages and components
-- [ ] #6 System preference (prefers-color-scheme) is respected on first load
+- [x] #3 Theme toggle component is implemented and accessible
+- [x] #4 Theme preference is persisted to localStorage
+- [x] #5 Theme changes apply smoothly across all pages and components
+- [x] #6 System preference (prefers-color-scheme) is respected on first load
 <!-- AC:END -->
 
 ## Implementation Plan
