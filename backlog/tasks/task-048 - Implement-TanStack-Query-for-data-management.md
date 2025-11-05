@@ -5,7 +5,7 @@ status: Done
 assignee:
   - '@assistant'
 created_date: '2025-11-05 16:55'
-updated_date: '2025-11-05 17:39'
+updated_date: '2025-11-05 17:41'
 labels:
   - frontend
   - data-management
@@ -170,4 +170,11 @@ import { useSummary, useOperations, useBatches, useRetentionConfig } from '@/hoo
 - The hooks are ready to be consumed by React components
 - All hooks support loading/error states for proper UX
 - Mutation hook demonstrates proper cache invalidation pattern
+
+## Port Configuration Fix
+
+Updated Vite proxy configuration to use the correct backend port:
+- Frontend: `localhost:57000` (Vite dev server)
+- Backend: `localhost:57010` (Quarkus application)
+- Proxy: All `/api/*` requests forwarded from frontend to backend
 <!-- SECTION:NOTES:END -->
