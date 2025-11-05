@@ -1,9 +1,11 @@
 ---
 id: task-051
 title: Create Batch Summary page
-status: To Do
-assignee: []
+status: In Progress
+assignee:
+  - '@claude'
 created_date: '2025-11-05 16:55'
+updated_date: '2025-11-05 18:21'
 labels:
   - frontend
   - batches
