@@ -64,3 +64,93 @@ Implement size-based retention that purges oldest sync_operation records when da
 
 5. Ensure all operations are transactional
 <!-- SECTION:PLAN:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+## Summary
+
+Implemented space-based retention purge logic for sync_operation records to prevent unbounded database growth. The system now automatically deletes oldest operations when database size exceeds the configured max_bytes threshold.
+
+## Implementation Details
+
+**Modified Files:**
+- `src/main/java/com/miimetiq/keycloak/sync/service/RetentionService.java` - Added space-based purge methods
+- `src/test/java/com/miimetiq/keycloak/sync/service/RetentionServiceTest.java` - Added 7 new integration tests
+
+**New Methods in RetentionService:**
+
+1. **calculateDatabaseSize()**: 
+   - Uses SQLite PRAGMA page_count and PRAGMA page_size
+   - Returns current database size in bytes (page_count * page_size)
+   - No transaction required, can be called anytime
+
+2. **purgeBySize()**:
+   - Reads max_bytes from retention_state table
+   - Returns 0 if max_bytes is null (unlimited)
+   - Calculates current database size using PRAGMA
+   - If size exceeds limit, deletes oldest records in batches of 100
+   - Updates retention_state.approx_db_bytes with final size
+   - Updates retention_state.updated_at timestamp
+   - Fully transactional operation
+
+3. **executeVacuum()**:
+   - Executes SQLite VACUUM to reclaim disk space
+   - Returns boolean indicating success/failure
+   - Handles SQLite transaction constraints gracefully
+   - Optional operation to be called after large purges
+
+**Key Features:**
+- Batch deletion (100 records at a time) prevents long-running transactions
+- Progressive size checking - recalculates after each batch
+- Stops when database is under limit or no more records exist
+- Always updates approx_db_bytes even if no purge needed
+- Handles edge cases: null max_bytes, empty database, all records need deletion
+
+**Test Coverage:**
+- 17 total tests (all passing)
+- 7 new tests for space-based purge:
+  - calculateDatabaseSize returns valid size
+  - No purge when max_bytes is null
+  - No purge when under limit (but updates approx_db_bytes)
+  - Deletes oldest records when over limit
+  - Updates approx_db_bytes after purge
+  - Handles multiple record deletion
+  - VACUUM handles transaction constraints gracefully
+
+## Technical Decisions
+
+- **PRAGMA over File System**: Using SQLite PRAGMA commands ensures accurate size calculation that includes all database overhead (indexes, metadata, etc.)
+- **Batch Deletion**: Deleting 100 records at a time balances between efficiency and transaction duration
+- **VACUUM Handling**: Made VACUUM non-throwing since it cannot run in SQLite transactions. Returns boolean for success/failure.
+- **Entity Manager for Native SQL**: Used EntityManager.createNativeQuery() for PRAGMA commands as they're not available through JPQL
+- **Transactional Purge**: Entire purge operation (including all batches) runs in single transaction for consistency
+
+## Testing
+
+All tests pass successfully:
+```
+Tests run: 17, Failures: 0, Errors: 0, Skipped: 0
+```
+
+Test highlights:
+- Database size calculation validated
+- Purge behavior tested with various size limits
+- Edge cases covered (null limits, empty db, full deletion)
+- VACUUM tested (handles transaction constraints appropriately)
+
+## Integration with Task 32
+
+This implementation complements the TTL-based purge (task-32):
+- Both use same RetentionService class
+- Both read from retention_state singleton
+- Both update retention_state after purge
+- Can be used together or independently
+- Scheduled job (task-35) will call both methods
+
+## Next Steps
+
+This implementation provides the foundation for:
+- task-35: Scheduled retention purge job (will call both purgeTtl() and purgeBySize())
+- task-36: Prometheus metrics for retention operations
+<!-- SECTION:NOTES:END -->
