@@ -5,7 +5,7 @@ status: In Progress
 assignee:
   - '@assistant'
 created_date: '2025-11-05 16:55'
-updated_date: '2025-11-05 17:36'
+updated_date: '2025-11-05 17:37'
 labels:
   - frontend
   - data-management
@@ -23,7 +23,7 @@ Set up TanStack Query (React Query) for managing server state, caching, and poll
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
 - [x] #1 TanStack Query installed and configured with QueryClientProvider
-- [ ] #2 Custom hooks created for fetching summary data
+- [x] #2 Custom hooks created for fetching summary data
 - [ ] #3 Custom hooks created for fetching operations with pagination
 - [ ] #4 Custom hooks created for fetching batches
 - [ ] #5 Custom hooks created for retention configuration
