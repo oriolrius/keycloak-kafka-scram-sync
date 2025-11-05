@@ -1,9 +1,11 @@
 ---
 id: task-032
 title: Implement TTL-based retention purge logic
-status: To Do
-assignee: []
+status: In Progress
+assignee:
+  - '@claude'
 created_date: '2025-11-05 06:17'
+updated_date: '2025-11-05 06:18'
 labels:
   - sprint-3
   - retention
