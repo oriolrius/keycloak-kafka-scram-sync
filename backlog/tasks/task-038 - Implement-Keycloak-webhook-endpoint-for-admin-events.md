@@ -44,3 +44,51 @@ Create a REST endpoint `POST /api/kc/events` that receives Keycloak Admin Events
 8. Verify all HTTP response codes (200 OK, 400 Bad Request)
 9. Run tests and verify all acceptance criteria
 <!-- SECTION:PLAN:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+## Summary
+
+Implemented Keycloak webhook endpoint for receiving admin events as the entry point for event-driven synchronization.
+
+## Changes
+
+### New Files Created
+
+1. **KeycloakAdminEvent.java** - DTO representing Keycloak admin event structure with nested AuthDetails class
+2. **KeycloakWebhookResource.java** - JAX-RS REST endpoint at POST /api/kc/events with proper validation and error handling
+3. **KeycloakWebhookResourceIntegrationTest.java** - Comprehensive integration tests with 10 test cases
+
+### Key Features
+
+- REST endpoint POST /api/kc/events that accepts JSON payloads
+- UUID-based correlation ID generation for tracking each received event
+- Input validation for required fields (resourceType, operationType)
+- Proper HTTP status codes: 200 OK for valid events, 400 Bad Request for malformed/invalid JSON
+- Comprehensive logging with correlation IDs for traceability
+- Stub for event enqueueing (actual queue processing deferred to task-040)
+
+### Testing
+
+Created 10 integration tests covering:
+- CREATE_USER, UPDATE_USER, DELETE_USER, and password change event scenarios
+- Malformed JSON handling
+- Null payload validation
+- Missing required fields validation
+- Correlation ID generation (UUID pattern validation)
+- HTTP method validation (405 for non-POST methods)
+
+All tests pass successfully.
+
+## Technical Details
+
+- Follows existing codebase patterns (JAX-RS, JBoss Logger, inner class DTOs)
+- Uses @JsonIgnoreProperties for flexible JSON parsing
+- Generates UUID correlation IDs matching existing reconciliation pattern
+- Integrated with Testcontainers for realistic integration testing
+
+## Next Steps
+
+Event queue processing will be implemented in task-040.
+<!-- SECTION:NOTES:END -->
