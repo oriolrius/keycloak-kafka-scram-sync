@@ -5,7 +5,7 @@ status: In Progress
 assignee:
   - '@claude'
 created_date: '2025-11-05 06:17'
-updated_date: '2025-11-05 09:27'
+updated_date: '2025-11-05 09:38'
 labels:
   - sprint-3
   - retention
@@ -23,12 +23,12 @@ Implement GET and PUT endpoints at /api/config/retention for reading and updatin
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 GET /api/config/retention returns current retention_state (max_bytes, max_age_days, approx_db_bytes, updated_at)
-- [ ] #2 PUT /api/config/retention accepts JSON with max_bytes and/or max_age_days
-- [ ] #3 PUT endpoint validates input (non-negative values, reasonable limits)
-- [ ] #4 PUT endpoint updates retention_state table and returns updated config
-- [ ] #5 Endpoints documented in OpenAPI specification
-- [ ] #6 Integration tests verify GET and PUT operations
+- [x] #1 GET /api/config/retention returns current retention_state (max_bytes, max_age_days, approx_db_bytes, updated_at)
+- [x] #2 PUT /api/config/retention accepts JSON with max_bytes and/or max_age_days
+- [x] #3 PUT endpoint validates input (non-negative values, reasonable limits)
+- [x] #4 PUT endpoint updates retention_state table and returns updated config
+- [x] #5 Endpoints documented in OpenAPI specification
+- [x] #6 Integration tests verify GET and PUT operations
 <!-- AC:END -->
 
 ## Implementation Plan
