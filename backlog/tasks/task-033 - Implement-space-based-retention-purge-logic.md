@@ -5,7 +5,7 @@ status: In Progress
 assignee:
   - '@claude'
 created_date: '2025-11-05 06:17'
-updated_date: '2025-11-05 06:26'
+updated_date: '2025-11-05 06:34'
 labels:
   - sprint-3
   - retention
@@ -22,12 +22,12 @@ Implement size-based retention that purges oldest sync_operation records when da
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Service calculates db_bytes using PRAGMA page_count * page_size
-- [ ] #2 Purge deletes oldest records (by occurred_at) when db_bytes > max_bytes
-- [ ] #3 Purge operation updates retention_state.approx_db_bytes after deletion
-- [ ] #4 Optional VACUUM is executed to reclaim disk space
-- [ ] #5 Unit tests verify size calculation and deletion logic
-- [ ] #6 Handles case where max_bytes is NULL (unlimited)
+- [x] #1 Service calculates db_bytes using PRAGMA page_count * page_size
+- [x] #2 Purge deletes oldest records (by occurred_at) when db_bytes > max_bytes
+- [x] #3 Purge operation updates retention_state.approx_db_bytes after deletion
+- [x] #4 Optional VACUUM is executed to reclaim disk space
+- [x] #5 Unit tests verify size calculation and deletion logic
+- [x] #6 Handles case where max_bytes is NULL (unlimited)
 <!-- AC:END -->
 
 ## Implementation Plan
