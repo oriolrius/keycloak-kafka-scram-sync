@@ -1,9 +1,11 @@
 ---
 id: task-036
 title: Add Prometheus metrics for retention operations
-status: To Do
-assignee: []
+status: In Progress
+assignee:
+  - '@claude'
 created_date: '2025-11-05 06:17'
+updated_date: '2025-11-05 09:54'
 labels:
   - sprint-3
   - retention
