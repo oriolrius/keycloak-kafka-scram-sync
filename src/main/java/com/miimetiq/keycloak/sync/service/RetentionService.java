@@ -1,8 +1,10 @@
 package com.miimetiq.keycloak.sync.service;
 
 import com.miimetiq.keycloak.sync.domain.entity.RetentionState;
+import com.miimetiq.keycloak.sync.metrics.SyncMetrics;
 import com.miimetiq.keycloak.sync.repository.RetentionRepository;
 import com.miimetiq.keycloak.sync.repository.SyncOperationRepository;
+import io.micrometer.core.instrument.Timer;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.persistence.EntityManager;
@@ -38,6 +40,9 @@ public class RetentionService {
 
     @Inject
     EntityManager entityManager;
+
+    @Inject
+    SyncMetrics syncMetrics;
 
     /**
      * Executes a time-based purge of sync operations older than the configured TTL.
@@ -81,6 +86,9 @@ public class RetentionService {
         retentionState.setUpdatedAt(LocalDateTime.now());
         retentionRepository.persist(retentionState);
 
+        // Update database size metric
+        syncMetrics.updateDatabaseSize();
+
         LOG.infof("TTL purge completed: deleted_count=%d", deletedCount);
 
         return deletedCount;
@@ -111,6 +119,9 @@ public class RetentionService {
         retentionState.setUpdatedAt(LocalDateTime.now());
 
         retentionRepository.persist(retentionState);
+
+        // Update retention config metrics
+        syncMetrics.updateRetentionConfig(maxBytes, maxAgeDays);
 
         LOG.infof("Retention config updated: max_bytes=%d, max_age_days=%d", maxBytes, maxAgeDays);
     }
@@ -218,6 +229,9 @@ public class RetentionService {
         retentionState.setApproxDbBytes(currentSize);
         retentionState.setUpdatedAt(LocalDateTime.now());
         retentionRepository.persist(retentionState);
+
+        // Update database size metric
+        syncMetrics.updateDatabaseSize();
 
         LOG.infof("Size-based purge completed: deleted_count=%d, final_size=%d", totalDeleted, currentSize);
 

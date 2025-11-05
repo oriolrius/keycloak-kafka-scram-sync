@@ -30,6 +30,10 @@ public class SyncMetrics {
     private final AtomicLong lastSuccessEpochSeconds = new AtomicLong(0);
     private final AtomicLong dbSizeBytes = new AtomicLong(0);
 
+    // Retention configuration gauges
+    private final AtomicLong retentionMaxBytes = new AtomicLong(0);
+    private final AtomicLong retentionMaxAgeDays = new AtomicLong(0);
+
     // Database path for size tracking
     private volatile String databasePath = "sync-agent.db";
 
@@ -40,6 +44,10 @@ public class SyncMetrics {
         // Gauges for last successful reconciliation and database size
         registry.gauge("sync_last_success_epoch_seconds", lastSuccessEpochSeconds);
         registry.gauge("sync_db_size_bytes", dbSizeBytes, AtomicLong::get);
+
+        // Retention configuration gauges
+        registry.gauge("sync_retention_max_bytes", retentionMaxBytes, AtomicLong::get);
+        registry.gauge("sync_retention_max_age_days", retentionMaxAgeDays, AtomicLong::get);
 
         // Legacy gauges (kept for backward compatibility)
         registry.gauge("sync.last.timestamp", lastSyncTimestamp);
@@ -185,6 +193,69 @@ public class SyncMetrics {
      */
     public void setDatabasePath(String path) {
         this.databasePath = path;
+    }
+
+    // ========== Webhook Event Retry Metrics ==========
+
+    /**
+     * Increment counter for webhook event retry attempts.
+     *
+     * @param result the retry result (SUCCESS, ERROR, MAX_RETRIES_EXCEEDED)
+     */
+    public void incrementRetryAttempts(String result) {
+        Counter.builder("sync_retry_total")
+                .description("Total number of webhook event retry attempts")
+                .tag("result", result)
+                .register(registry)
+                .increment();
+    }
+
+    // ========== Retention Metrics ==========
+
+    /**
+     * Increment counter for purge operations.
+     *
+     * @param reason the purge reason (scheduled, post-batch)
+     */
+    public void incrementPurgeRuns(String reason) {
+        Counter.builder("sync_purge_runs_total")
+                .description("Total number of retention purge operations")
+                .tag("reason", reason)
+                .register(registry)
+                .increment();
+    }
+
+    /**
+     * Start a timer for purge operations.
+     *
+     * @return Timer.Sample to stop timing later
+     */
+    public Timer.Sample startPurgeTimer() {
+        return Timer.start(registry);
+    }
+
+    /**
+     * Stop and record purge operation duration.
+     *
+     * @param sample the timer sample from startPurgeTimer()
+     */
+    public void recordPurgeDuration(Timer.Sample sample) {
+        sample.stop(Timer.builder("sync_purge_duration_seconds")
+                .description("Duration of retention purge operations")
+                .register(registry));
+    }
+
+    /**
+     * Update retention configuration gauges.
+     *
+     * @param maxBytes the max bytes limit (null means no limit)
+     * @param maxAgeDays the max age in days (null means no limit)
+     */
+    public void updateRetentionConfig(Long maxBytes, Integer maxAgeDays) {
+        retentionMaxBytes.set(maxBytes != null ? maxBytes : 0);
+        retentionMaxAgeDays.set(maxAgeDays != null ? maxAgeDays : 0);
+        LOG.debugf("Updated retention config metrics: maxBytes=%d, maxAgeDays=%d",
+                retentionMaxBytes.get(), retentionMaxAgeDays.get());
     }
 
     // ========== Legacy Methods (Backward Compatibility) ==========

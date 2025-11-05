@@ -4,8 +4,11 @@ import com.miimetiq.keycloak.sync.domain.entity.RetentionState;
 import com.miimetiq.keycloak.sync.domain.entity.SyncOperation;
 import com.miimetiq.keycloak.sync.domain.enums.OpType;
 import com.miimetiq.keycloak.sync.domain.enums.OperationResult;
+import com.miimetiq.keycloak.sync.metrics.SyncMetrics;
 import com.miimetiq.keycloak.sync.repository.RetentionRepository;
 import com.miimetiq.keycloak.sync.repository.SyncOperationRepository;
+import io.micrometer.core.instrument.Gauge;
+import io.micrometer.core.instrument.MeterRegistry;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
@@ -37,6 +40,12 @@ class RetentionServiceTest {
 
     @Inject
     SyncOperationRepository operationRepository;
+
+    @Inject
+    SyncMetrics syncMetrics;
+
+    @Inject
+    MeterRegistry registry;
 
     @BeforeEach
     @Transactional
@@ -392,5 +401,49 @@ class RetentionServiceTest {
     @Transactional
     void updateRetentionConfig(Long maxBytes, Integer maxAgeDays) {
         retentionService.updateRetentionConfig(maxBytes, maxAgeDays);
+    }
+
+    // ========== Metrics Integration Tests ==========
+
+    @Test
+    @Transactional
+    void testUpdateRetentionConfig_UpdatesMetrics() {
+        // Given: new retention config
+        Long maxBytes = 536870912L; // 512 MB
+        Integer maxAgeDays = 45;
+
+        // When: updating retention config
+        retentionService.updateRetentionConfig(maxBytes, maxAgeDays);
+
+        // Then: metrics should be updated
+        Gauge maxBytesGauge = registry.find("sync_retention_max_bytes").gauge();
+        Gauge maxAgeDaysGauge = registry.find("sync_retention_max_age_days").gauge();
+
+        assertNotNull(maxBytesGauge, "max_bytes gauge should exist");
+        assertNotNull(maxAgeDaysGauge, "max_age_days gauge should exist");
+
+        assertEquals(maxBytes.doubleValue(), maxBytesGauge.value(), 0.001,
+                "Metrics should reflect updated max_bytes");
+        assertEquals(maxAgeDays.doubleValue(), maxAgeDaysGauge.value(), 0.001,
+                "Metrics should reflect updated max_age_days");
+    }
+
+    @Test
+    @Transactional
+    void testUpdateRetentionConfig_NullValues_UpdatesMetrics() {
+        // When: updating retention config with null values
+        retentionService.updateRetentionConfig(null, null);
+
+        // Then: metrics should be set to 0
+        Gauge maxBytesGauge = registry.find("sync_retention_max_bytes").gauge();
+        Gauge maxAgeDaysGauge = registry.find("sync_retention_max_age_days").gauge();
+
+        assertNotNull(maxBytesGauge);
+        assertNotNull(maxAgeDaysGauge);
+
+        assertEquals(0.0, maxBytesGauge.value(), 0.001,
+                "Metrics should be 0 when config is null");
+        assertEquals(0.0, maxAgeDaysGauge.value(), 0.001,
+                "Metrics should be 0 when config is null");
     }
 }

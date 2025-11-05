@@ -42,8 +42,8 @@ class RetentionSchedulerTest {
         when(retentionService.purgeBySize()).thenReturn(5L);
         when(retentionService.executeVacuum()).thenReturn(true);
 
-        // When: executing purge
-        RetentionScheduler.PurgeResult result = scheduler.executePurge();
+        // When: executing purge with scheduled reason
+        RetentionScheduler.PurgeResult result = scheduler.executePurge("scheduled");
 
         // Then: should call both purge methods and vacuum
         assertNotNull(result);
@@ -62,8 +62,8 @@ class RetentionSchedulerTest {
         when(retentionService.purgeTtl()).thenReturn(0L);
         when(retentionService.purgeBySize()).thenReturn(0L);
 
-        // When: executing purge
-        RetentionScheduler.PurgeResult result = scheduler.executePurge();
+        // When: executing purge with post-batch reason
+        RetentionScheduler.PurgeResult result = scheduler.executePurge("post-batch");
 
         // Then: should not call vacuum
         assertNotNull(result);
@@ -84,7 +84,7 @@ class RetentionSchedulerTest {
         when(retentionService.executeVacuum()).thenReturn(true);
 
         // When: executing purge
-        RetentionScheduler.PurgeResult result = scheduler.executePurge();
+        RetentionScheduler.PurgeResult result = scheduler.executePurge("scheduled");
 
         // Then: should continue with size purge and vacuum
         assertNotNull(result);
@@ -105,7 +105,7 @@ class RetentionSchedulerTest {
         when(retentionService.executeVacuum()).thenReturn(true);
 
         // When: executing purge
-        RetentionScheduler.PurgeResult result = scheduler.executePurge();
+        RetentionScheduler.PurgeResult result = scheduler.executePurge("scheduled");
 
         // Then: should still call vacuum (TTL deleted records)
         assertNotNull(result);
@@ -126,7 +126,7 @@ class RetentionSchedulerTest {
         when(retentionService.executeVacuum()).thenThrow(new RuntimeException("Vacuum failed"));
 
         // When: executing purge
-        RetentionScheduler.PurgeResult result = scheduler.executePurge();
+        RetentionScheduler.PurgeResult result = scheduler.executePurge("scheduled");
 
         // Then: should complete successfully despite vacuum failure
         assertNotNull(result);

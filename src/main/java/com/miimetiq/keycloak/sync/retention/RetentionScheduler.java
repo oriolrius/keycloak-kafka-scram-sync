@@ -1,6 +1,8 @@
 package com.miimetiq.keycloak.sync.retention;
 
+import com.miimetiq.keycloak.sync.metrics.SyncMetrics;
 import com.miimetiq.keycloak.sync.service.RetentionService;
+import io.micrometer.core.instrument.Timer;
 import io.quarkus.scheduler.Scheduled;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -28,6 +30,9 @@ public class RetentionScheduler {
 
     @Inject
     RetentionConfig retentionConfig;
+
+    @Inject
+    SyncMetrics syncMetrics;
 
     // Flag to prevent overlapping executions
     private final AtomicBoolean isRunning = new AtomicBoolean(false);
@@ -57,8 +62,8 @@ public class RetentionScheduler {
             LOG.info("Starting scheduled retention purge");
             long startTime = System.currentTimeMillis();
 
-            // Execute purge operations
-            PurgeResult result = executePurge();
+            // Execute purge operations with reason="scheduled"
+            PurgeResult result = executePurge("scheduled");
 
             long duration = System.currentTimeMillis() - startTime;
             LOG.infof("Scheduled retention purge completed: ttl_deleted=%d, size_deleted=%d, duration=%dms",
@@ -78,9 +83,16 @@ public class RetentionScheduler {
      * This method can be called by the scheduler or triggered after sync batch completion.
      * It executes both purge strategies and runs VACUUM to reclaim disk space.
      *
+     * @param reason the purge reason (scheduled, post-batch)
      * @return purge result with deletion counts
      */
-    public PurgeResult executePurge() {
+    public PurgeResult executePurge(String reason) {
+        // Start timer for purge duration
+        Timer.Sample timerSample = syncMetrics.startPurgeTimer();
+
+        // Increment purge counter
+        syncMetrics.incrementPurgeRuns(reason);
+
         long ttlDeleted = 0;
         long sizeDeleted = 0;
 
@@ -122,6 +134,9 @@ public class RetentionScheduler {
             }
         }
 
+        // Record purge duration
+        syncMetrics.recordPurgeDuration(timerSample);
+
         return new PurgeResult(ttlDeleted, sizeDeleted);
     }
 
@@ -140,7 +155,7 @@ public class RetentionScheduler {
 
         try {
             LOG.debug("Triggering post-sync retention purge");
-            PurgeResult result = executePurge();
+            PurgeResult result = executePurge("post-batch");
 
             if (result.ttlDeleted > 0 || result.sizeDeleted > 0) {
                 LOG.infof("Post-sync purge completed: ttl_deleted=%d, size_deleted=%d",

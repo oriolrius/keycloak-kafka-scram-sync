@@ -35,6 +35,9 @@ public class KeycloakWebhookResource {
     @Inject
     ObjectMapper objectMapper;
 
+    @Inject
+    EventQueueService eventQueueService;
+
     /**
      * Receive a Keycloak admin event via webhook.
      * <p>
@@ -114,8 +117,18 @@ public class KeycloakWebhookResource {
             LOG.infof("[%s] Received Keycloak admin event: resourceType=%s, operationType=%s, resourcePath=%s",
                     correlationId, event.getResourceType(), event.getOperationType(), event.getResourcePath());
 
-            // TODO: Enqueue event for processing (will be implemented in task-040)
-            // For now, we just log and return success
+            // Enqueue event for asynchronous processing
+            WebhookEvent webhookEvent = new WebhookEvent(correlationId, event);
+            boolean enqueued = eventQueueService.enqueue(webhookEvent);
+
+            if (!enqueued) {
+                LOG.errorf("[%s] Failed to enqueue event, queue is full", correlationId);
+                return Response
+                        .status(Response.Status.SERVICE_UNAVAILABLE)
+                        .entity(new ErrorResponse("Event queue is full, please retry later"))
+                        .build();
+            }
+
             LOG.debugf("[%s] Event enqueued for processing: %s", correlationId, event);
 
             // Return success response
