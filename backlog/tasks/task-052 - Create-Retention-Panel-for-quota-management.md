@@ -1,9 +1,11 @@
 ---
 id: task-052
 title: Create Retention Panel for quota management
-status: To Do
-assignee: []
+status: In Progress
+assignee:
+  - '@claude'
 created_date: '2025-11-05 16:55'
+updated_date: '2025-11-05 18:31'
 labels:
   - frontend
   - retention
