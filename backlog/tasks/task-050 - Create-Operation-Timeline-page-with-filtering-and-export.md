@@ -5,7 +5,7 @@ status: In Progress
 assignee:
   - '@assistant'
 created_date: '2025-11-05 16:55'
-updated_date: '2025-11-05 17:52'
+updated_date: '2025-11-05 17:57'
 labels:
   - frontend
   - operations
@@ -22,14 +22,14 @@ Build the operation timeline page showing detailed history of all sync operation
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Paginated table displays operation history with shadcn/ui Table component
-- [ ] #2 Columns show timestamp, realm, principal, operation type, result, duration, and error details
-- [ ] #3 Filter controls for time range, principal, op_type, and result status
-- [ ] #4 Sorting capability on key columns (timestamp, duration, principal)
-- [ ] #5 Pagination controls with page size selector
-- [ ] #6 CSV export button downloads filtered results
-- [ ] #7 Error details expandable for failed operations
-- [ ] #8 Real-time updates via TanStack Query polling
+- [x] #1 Paginated table displays operation history with shadcn/ui Table component
+- [x] #2 Columns show timestamp, realm, principal, operation type, result, duration, and error details
+- [x] #3 Filter controls for time range, principal, op_type, and result status
+- [x] #4 Sorting capability on key columns (timestamp, duration, principal)
+- [x] #5 Pagination controls with page size selector
+- [x] #6 CSV export button downloads filtered results
+- [x] #7 Error details expandable for failed operations
+- [x] #8 Real-time updates via TanStack Query polling
 <!-- AC:END -->
 
 ## Implementation Plan
