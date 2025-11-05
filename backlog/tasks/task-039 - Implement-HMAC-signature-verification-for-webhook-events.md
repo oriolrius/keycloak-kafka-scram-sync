@@ -42,3 +42,91 @@ Add security validation for incoming webhook events by verifying HMAC signatures
 7. Create integration tests with valid/invalid signatures
 8. Run all tests and verify acceptance criteria
 <!-- SECTION:PLAN:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+## Summary
+
+Implemented HMAC-SHA256 signature verification for webhook events to prevent unauthorized event injection and ensure webhook authenticity.
+
+## Changes
+
+### New Files Created
+
+1. **WebhookSignatureValidator.java** - Service for validating HMAC-SHA256 signatures
+   - Computes expected signature using configured secret
+   - Performs timing-safe comparison to prevent timing attacks
+   - Handles missing/invalid signatures with appropriate error messages
+   - Supports optional configuration (disabled when secret not set)
+
+2. **WebhookSignatureValidatorTest.java** - Comprehensive unit tests (12 test cases)
+
+3. **WebhookSignatureIntegrationTest.java** - Integration tests with signature validation enabled (6 test cases)
+
+### Modified Files
+
+1. **KeycloakWebhookResource.java** - Enhanced with signature verification
+   - Added signature validation before event processing
+   - Changed method signature to accept raw String payload for validation
+   - Manually deserialize JSON after signature validation
+   - Return 401 Unauthorized for invalid/missing signatures
+   - Maintain backward compatibility when secret not configured
+
+2. **KeycloakConfig.java** - Already had webhookHmacSecret() configuration (no changes needed)
+
+### Key Features
+
+- **HMAC-SHA256 signature verification** using javax.crypto.Mac
+- **X-Keycloak-Signature header validation** from incoming requests
+- **Timing-safe comparison** using MessageDigest.isEqual() to prevent timing attacks
+- **Optional configuration** - signature validation disabled when KC_WEBHOOK_HMAC_SECRET not set
+- **Proper HTTP status codes** - 401 Unauthorized for auth failures, 400 Bad Request for malformed payloads
+- **Signature masking in logs** for security (shows only first/last 4 characters)
+
+### Testing
+
+Created comprehensive test coverage:
+
+**Unit Tests (12 tests):**
+- Valid signature acceptance
+- Invalid signature rejection
+- Missing signature header handling
+- Null payload validation
+- Unconfigured secret bypass
+- Different payloads produce different signatures
+- Cross-payload signature validation
+- Different secrets produce different signatures
+- Case sensitivity validation
+- Empty payload handling
+
+**Integration Tests (6 tests with signature enabled):**
+- Valid signature allows processing
+- Invalid signature returns 401
+- Missing signature returns 401
+- Tampered payload detection
+- Wrong secret rejection
+- Empty signature header handling
+
+**Existing Tests (10 tests):**
+- All existing webhook tests continue to pass
+- Signature validation gracefully disabled when not configured
+
+All 28 tests pass successfully.
+
+## Technical Details
+
+- Follows existing codebase patterns (CDI beans, Logger, validation patterns)
+- Configuration already existed in KeycloakConfig via keycloak.webhook-hmac-secret property
+- Can be configured via KC_WEBHOOK_HMAC_SECRET environment variable
+- Uses standard Java cryptography libraries (javax.crypto)
+- Hex encoding/decoding via HexFormat (Java 17+)
+- Backward compatible - existing deployments without HMAC secret continue to work
+
+## Security Considerations
+
+- Timing-safe comparison prevents timing attack vectors
+- Signature validation occurs before JSON deserialization
+- Logs mask sensitive signature data
+- Properly handles edge cases (null, empty, malformed data)
+<!-- SECTION:NOTES:END -->
