@@ -1,9 +1,11 @@
 ---
 id: task-048
 title: Implement TanStack Query for data management
-status: To Do
-assignee: []
+status: In Progress
+assignee:
+  - '@assistant'
 created_date: '2025-11-05 16:55'
+updated_date: '2025-11-05 17:35'
 labels:
   - frontend
   - data-management
