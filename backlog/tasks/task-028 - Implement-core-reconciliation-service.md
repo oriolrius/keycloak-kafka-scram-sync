@@ -5,7 +5,7 @@ status: In Progress
 assignee:
   - '@claude'
 created_date: '2025-11-04 18:35'
-updated_date: '2025-11-05 05:09'
+updated_date: '2025-11-05 05:11'
 labels:
   - backend
   - sync
@@ -35,3 +35,27 @@ Create the main ReconciliationService that orchestrates the complete sync cycle:
 - [ ] #12 Unit tests with mocked dependencies validate orchestration logic
 - [ ] #13 Integration test validates end-to-end reconciliation flow
 <!-- AC:END -->
+
+## Implementation Plan
+
+<!-- SECTION:PLAN:BEGIN -->
+1. Analyze current ReconciliationService and identify gaps vs acceptance criteria
+2. Update ReconciliationService to use diff-based reconciliation:
+   - Fetch Kafka principals using KafkaScramManager.describeUserScramCredentials()
+   - Integrate SyncDiffEngine to compute diff between Keycloak and Kafka
+   - Process upserts from SyncPlan (existing logic)
+   - Add delete operations for orphaned principals
+   - Update batch tracking for both upserts and deletes
+3. Enhance error handling for delete operations (similar to upserts)
+4. Update metrics to track both upsert and delete operations
+5. Create comprehensive unit tests (ReconciliationServiceTest):
+   - Test happy path with mocked dependencies
+   - Test diff computation integration
+   - Test upsert-only scenario
+   - Test delete-only scenario  
+   - Test mixed upsert+delete scenario
+   - Test error handling with partial failures
+   - Test metrics recording
+6. Verify integration tests still pass
+7. Update task ACs and notes
+<!-- SECTION:PLAN:END -->
