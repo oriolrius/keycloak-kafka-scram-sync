@@ -1,7 +1,7 @@
 ---
 id: task-054
 title: Add force reconcile functionality to dashboard
-status: In Progress
+status: Done
 assignee:
   - '@claude'
 created_date: '2025-11-05 16:55'
