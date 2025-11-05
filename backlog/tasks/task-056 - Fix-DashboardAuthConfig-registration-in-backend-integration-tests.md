@@ -1,7 +1,7 @@
 ---
 id: task-056
 title: Fix DashboardAuthConfig registration in backend integration tests
-status: In Progress
+status: Done
 assignee:
   - '@assistant'
 created_date: '2025-11-05 20:49'
