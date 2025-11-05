@@ -5,7 +5,7 @@ status: In Progress
 assignee:
   - '@claude'
 created_date: '2025-11-05 06:17'
-updated_date: '2025-11-05 09:27'
+updated_date: '2025-11-05 09:44'
 labels:
   - sprint-3
   - retention
@@ -23,12 +23,12 @@ Create a scheduled background job that executes retention purge logic periodical
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Scheduled job runs every RETENTION_PURGE_INTERVAL_SECONDS (default 300s)
-- [ ] #2 Job executes both TTL and space-based purge logic
-- [ ] #3 Purge is triggered after each sync_batch completion
-- [ ] #4 Job handles failures gracefully and logs errors
-- [ ] #5 Configuration loads RETENTION_PURGE_INTERVAL_SECONDS from environment
-- [ ] #6 Unit tests verify scheduling behavior and error handling
+- [x] #1 Scheduled job runs every RETENTION_PURGE_INTERVAL_SECONDS (default 300s)
+- [x] #2 Job executes both TTL and space-based purge logic
+- [x] #3 Purge is triggered after each sync_batch completion
+- [x] #4 Job handles failures gracefully and logs errors
+- [x] #5 Configuration loads RETENTION_PURGE_INTERVAL_SECONDS from environment
+- [x] #6 Unit tests verify scheduling behavior and error handling
 <!-- AC:END -->
 
 ## Implementation Plan
