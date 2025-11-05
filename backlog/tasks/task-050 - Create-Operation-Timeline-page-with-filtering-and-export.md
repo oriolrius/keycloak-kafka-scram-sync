@@ -5,7 +5,7 @@ status: Done
 assignee:
   - '@assistant'
 created_date: '2025-11-05 16:55'
-updated_date: '2025-11-05 18:17'
+updated_date: '2025-11-05 18:18'
 labels:
   - frontend
   - operations
@@ -135,4 +135,54 @@ Operations display realm name extracted from entityId field (format: `realm:enti
 ### Testing
 
 The application compiles successfully and the dev server is running on http://localhost:57000/
+
+### Playwright UI Tests
+
+Created comprehensive end-to-end tests for both Dashboard and Operations pages in `tests/ui/`.
+
+**Test Configuration** (`tests/playwright-ui.config.ts`):
+- Base URL: http://localhost:57000 (configurable via FRONTEND_BASE_URL)
+- Chromium browser project
+- HTML, JSON, and list reporters
+- Screenshots and videos on failure
+- Trace collection on first retry
+
+**Dashboard Tests** (`tests/ui/dashboard.spec.ts` - 8 tests):
+- Verify page title and description
+- Check navigation menu presence and active state
+- Validate summary metrics cards (Operations/Hour, Error Rate, Latency)
+- Validate connection status cards (Kafka, Keycloak, Database)
+- Verify Force Reconcile button visibility
+- Check operations volume charts (24h and 72h)
+- Test navigation to Operations page
+
+**Operations Tests** (`tests/ui/operations.spec.ts` - 11 tests):
+- Verify page title and description
+- Check navigation menu active state
+- Validate filter card and controls
+- Verify Export CSV button
+- Check operations table structure and data
+- Validate page size selector
+- Test principal filtering functionality
+- Test expandable operation details (collapsible rows)
+- Verify status badges (SUCCESS, ERROR, SKIPPED)
+- Test navigation to Dashboard
+
+**Test Optimization**:
+- Fixed wait strategy to use `domcontentloaded` + heading selector instead of `networkidle`
+- This was necessary because the app has continuous API polling (5-30s intervals)
+- Tests now run in ~5 seconds instead of timing out at 30+ seconds
+- All 19 tests pass consistently
+
+**Running Tests**:
+```bash
+# Run all UI tests
+npm run test:ui
+
+# Run with specific reporter
+npx playwright test --config=tests/playwright-ui.config.ts --reporter=list
+
+# Run specific test file
+npx playwright test tests/ui/dashboard.spec.ts --config=tests/playwright-ui.config.ts
+```
 <!-- SECTION:NOTES:END -->
