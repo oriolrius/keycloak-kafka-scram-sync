@@ -5,7 +5,7 @@ status: In Progress
 assignee:
   - '@claude'
 created_date: '2025-11-05 10:16'
-updated_date: '2025-11-05 10:31'
+updated_date: '2025-11-05 10:32'
 labels:
   - sprint-4
   - queue
@@ -29,3 +29,16 @@ Implement an in-memory queue (or persistent queue) to decouple webhook ingestion
 - [ ] #5 Queue status metric exposed (sync_queue_backlog gauge)
 - [ ] #6 Integration test validates queue behavior under load
 <!-- AC:END -->
+
+## Implementation Plan
+
+<!-- SECTION:PLAN:BEGIN -->
+1. Create WebhookEvent wrapper class to hold event + correlation ID
+2. Create EventQueueService with configurable capacity and overflow behavior
+3. Add queue configuration properties (capacity, overflow-strategy)
+4. Create async EventProcessor worker that polls and processes events
+5. Add sync_queue_backlog gauge metric to SyncMetrics
+6. Wire EventQueueService into KeycloakWebhookResource
+7. Write integration test for queue behavior under load
+8. Update all acceptance criteria
+<!-- SECTION:PLAN:END -->
