@@ -5,7 +5,7 @@ status: In Progress
 assignee:
   - '@claude'
 created_date: '2025-11-05 10:16'
-updated_date: '2025-11-05 10:23'
+updated_date: '2025-11-05 10:28'
 labels:
   - sprint-4
   - webhook
@@ -22,12 +22,12 @@ Add security validation for incoming webhook events by verifying HMAC signatures
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 HMAC-SHA256 signature verification implemented
-- [ ] #2 Configuration supports KC_WEBHOOK_HMAC_SECRET environment variable
-- [ ] #3 Invalid signatures return 401 Unauthorized
-- [ ] #4 Missing signature header returns 401 Unauthorized
-- [ ] #5 Valid signatures allow event processing to proceed
-- [ ] #6 Unit tests cover signature validation logic
+- [x] #1 HMAC-SHA256 signature verification implemented
+- [x] #2 Configuration supports KC_WEBHOOK_HMAC_SECRET environment variable
+- [x] #3 Invalid signatures return 401 Unauthorized
+- [x] #4 Missing signature header returns 401 Unauthorized
+- [x] #5 Valid signatures allow event processing to proceed
+- [x] #6 Unit tests cover signature validation logic
 <!-- AC:END -->
 
 ## Implementation Plan
