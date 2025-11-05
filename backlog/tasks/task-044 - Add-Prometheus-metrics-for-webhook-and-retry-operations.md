@@ -5,7 +5,7 @@ status: In Progress
 assignee:
   - '@claude'
 created_date: '2025-11-05 10:16'
-updated_date: '2025-11-05 16:30'
+updated_date: '2025-11-05 16:31'
 labels:
   - sprint-4
   - metrics
@@ -30,3 +30,25 @@ Extend the Prometheus metrics endpoint to include counters and histograms for we
 - [ ] #6 All metrics exposed via GET /metrics in Prometheus format
 - [ ] #7 Integration test validates metric presence and accuracy
 <!-- AC:END -->
+
+## Implementation Plan
+
+<!-- SECTION:PLAN:BEGIN -->
+1. Analyze existing metrics implementation to understand patterns and conventions
+2. Add new metric methods to SyncMetrics.java:
+   - incrementWebhookReceived(realm, eventType, result)
+   - incrementSignatureFailure()
+   - startWebhookProcessingTimer()
+   - recordWebhookProcessingDuration(sample, realm, eventType)
+   - Update incrementRetryAttempts to include reason and attempt tags
+3. Instrument KeycloakWebhookResource to track:
+   - Webhook received events with result (success/error)
+   - Processing duration
+4. Instrument WebhookSignatureValidator to track signature failures
+5. Instrument EventProcessor to track:
+   - Processing duration for each event
+   - Update retry metrics to include reason and attempt number
+6. Verify sync_queue_backlog gauge is properly registered (already done in EventQueueService)
+7. Write integration test to validate all metrics are exposed
+8. Run tests and verify all pass
+<!-- SECTION:PLAN:END -->
