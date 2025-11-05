@@ -1,9 +1,11 @@
 ---
 id: task-031
 title: Create integration tests for Sprint 2 reconciliation engine
-status: To Do
-assignee: []
+status: In Progress
+assignee:
+  - '@claude'
 created_date: '2025-11-04 18:35'
+updated_date: '2025-11-05 06:13'
 labels:
   - backend
   - testing
