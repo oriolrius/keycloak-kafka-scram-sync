@@ -1,7 +1,7 @@
 ---
 id: task-048
 title: Implement TanStack Query for data management
-status: In Progress
+status: Done
 assignee:
   - '@assistant'
 created_date: '2025-11-05 16:55'
