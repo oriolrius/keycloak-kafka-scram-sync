@@ -1,9 +1,11 @@
 ---
 id: task-040
 title: Create event processing queue for webhook events
-status: To Do
-assignee: []
+status: In Progress
+assignee:
+  - '@claude'
 created_date: '2025-11-05 10:16'
+updated_date: '2025-11-05 10:31'
 labels:
   - sprint-4
   - queue
