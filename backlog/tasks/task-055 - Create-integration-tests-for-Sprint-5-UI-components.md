@@ -1,9 +1,11 @@
 ---
 id: task-055
 title: Create integration tests for Sprint 5 UI components
-status: To Do
-assignee: []
+status: In Progress
+assignee:
+  - '@assistant'
 created_date: '2025-11-05 16:55'
+updated_date: '2025-11-05 20:42'
 labels:
   - testing
   - integration
