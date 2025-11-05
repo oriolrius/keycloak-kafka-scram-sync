@@ -31,3 +31,18 @@ Build the operation timeline page showing detailed history of all sync operation
 - [ ] #7 Error details expandable for failed operations
 - [ ] #8 Real-time updates via TanStack Query polling
 <!-- AC:END -->
+
+## Implementation Plan
+
+<!-- SECTION:PLAN:BEGIN -->
+1. Explore existing frontend structure and API endpoints
+2. Create OperationsPage component with shadcn/ui Table
+3. Implement filtering controls (time range, principal, op_type, result)
+4. Add sorting functionality on key columns
+5. Implement pagination with page size selector
+6. Add CSV export functionality
+7. Create expandable error details for failed operations
+8. Configure TanStack Query with polling for real-time updates
+9. Add routing and navigation
+10. Test all features
+<!-- SECTION:PLAN:END -->
