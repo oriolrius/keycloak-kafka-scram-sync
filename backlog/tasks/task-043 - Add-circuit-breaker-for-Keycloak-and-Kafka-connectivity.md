@@ -1,9 +1,11 @@
 ---
 id: task-043
 title: Add circuit breaker for Keycloak and Kafka connectivity
-status: To Do
-assignee: []
+status: In Progress
+assignee:
+  - '@claude'
 created_date: '2025-11-05 10:16'
+updated_date: '2025-11-05 10:54'
 labels:
   - sprint-4
   - robustness
