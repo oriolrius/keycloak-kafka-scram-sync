@@ -1,7 +1,7 @@
 ---
 id: task-032
 title: Implement TTL-based retention purge logic
-status: In Progress
+status: Done
 assignee:
   - '@claude'
 created_date: '2025-11-05 06:17'
