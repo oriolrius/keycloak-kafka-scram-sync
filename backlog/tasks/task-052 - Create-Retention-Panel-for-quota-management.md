@@ -5,7 +5,7 @@ status: In Progress
 assignee:
   - '@claude'
 created_date: '2025-11-05 16:55'
-updated_date: '2025-11-05 18:31'
+updated_date: '2025-11-05 18:33'
 labels:
   - frontend
   - retention
@@ -32,3 +32,26 @@ Build the retention management interface showing current database usage, configu
 - [ ] #8 Visual warning when approaching storage limits (>80%)
 - [ ] #9 Last purge timestamp and statistics displayed
 <!-- AC:END -->
+
+## Implementation Plan
+
+<!-- SECTION:PLAN:BEGIN -->
+1. Review backend API at /api/config/retention (GET and PUT endpoints) - already implemented with validation
+2. Review existing frontend infrastructure - useRetentionConfig() hook, apiClient methods exist
+3. Fix RetentionConfig type in frontend/src/types/api.ts to match backend:
+   - Replace maxRecords and cleanupIntervalHours with maxBytes, approxDbBytes, updatedAt
+4. Create RetentionPanel component at frontend/src/components/RetentionPanel.tsx:
+   - Display current DB size with progress bar
+   - Show percentage of max_bytes quota if configured
+   - Show max_age_days (TTL) if configured
+   - Editable form for maxBytes and maxAgeDays
+   - Form validation (positive values, maxBytes <= 10GB, maxAgeDays <= 3650)
+   - Save button calls PUT /api/config/retention via useUpdateRetentionConfig()
+   - Success/error toast feedback
+   - Warning badge when >80% of storage limit
+   - Display last update timestamp
+5. Integrate RetentionPanel into Dashboard page (add new card section)
+6. Test manually with dev server
+7. Create Playwright UI tests for RetentionPanel
+8. Run tests and fix any issues
+<!-- SECTION:PLAN:END -->
