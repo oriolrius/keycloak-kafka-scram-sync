@@ -27,25 +27,28 @@
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-    --primary: 217.2 91.2% 59.8%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 224.3 76.3% 48%;
+    /* Very dark backgrounds - almost black with slight brown tint */
+    --background: 16 15% 8%;         /* #1a1412 - very dark brown, almost black */
+    --foreground: 0 0% 92%;          /* #ebebeb - light gray text */
+    --card: 16 12% 12%;              /* #231e1c - dark brown card */
+    --card-foreground: 0 0% 92%;     /* #ebebeb - light gray text */
+    --popover: 16 12% 12%;           /* #231e1c - dark brown */
+    --popover-foreground: 0 0% 92%;  /* #ebebeb - light gray text */
+
+    /* Orange accents - use sparingly for highlights */
+    --primary: 24 100% 55%;          /* #f97316 - orange for primary actions */
+    --primary-foreground: 0 0% 98%;  /* white text on orange */
+    --secondary: 16 10% 18%;         /* #2e2824 - subtle dark brown */
+    --secondary-foreground: 0 0% 85%; /* #d9d9d9 - light gray text */
+    --muted: 16 10% 18%;             /* #2e2824 - muted background */
+    --muted-foreground: 0 0% 60%;    /* #999999 - dimmed gray text */
+    --accent: 24 100% 55%;           /* #f97316 - orange accent */
+    --accent-foreground: 0 0% 98%;   /* white text on accent */
+    --destructive: 0 84% 50%;        /* red for errors */
+    --destructive-foreground: 0 0% 98%; /* white text */
+    --border: 16 8% 22%;             /* #3a3330 - subtle border */
+    --input: 16 8% 22%;              /* #3a3330 - input border */
+    --ring: 24 100% 55%;             /* #f97316 - orange focus ring */
   }
 }
 

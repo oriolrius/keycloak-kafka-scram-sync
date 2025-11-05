@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { AuthProvider } from './contexts/AuthContext'
+import { ThemeProvider } from './contexts/ThemeContext'
 import Layout from './components/Layout'
 import ProtectedRoute from './components/ProtectedRoute'
 import Dashboard from './pages/Dashboard'
@@ -12,8 +13,9 @@ import NotFound from './pages/NotFound'
 function App() {
   return (
     <BrowserRouter>
-      <AuthProvider>
-        <Routes>
+      <ThemeProvider>
+        <AuthProvider>
+          <Routes>
           {/* Public routes */}
           <Route path="/login" element={<Login />} />
           <Route path="/oidc-callback" element={<OidcCallback />} />
@@ -53,7 +55,8 @@ function App() {
           {/* 404 - Not Found */}
           <Route path="*" element={<NotFound />} />
         </Routes>
-      </AuthProvider>
+        </AuthProvider>
+      </ThemeProvider>
     </BrowserRouter>
   )
 }

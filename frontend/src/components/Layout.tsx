@@ -2,6 +2,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { Home, Clock, Layers, LogOut } from 'lucide-react'
 import { Button } from './ui/button'
 import { useAuth } from '../contexts/AuthContext'
+import ThemeToggle from './ThemeToggle'
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   const location = useLocation()
@@ -62,17 +63,20 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 </Link>
               </div>
             </div>
-            {isAuthenticated && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleLogout}
-                className="flex items-center gap-2"
-              >
-                <LogOut className="h-4 w-4" />
-                Logout
-              </Button>
-            )}
+            <div className="flex items-center gap-2">
+              <ThemeToggle />
+              {isAuthenticated && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleLogout}
+                  className="flex items-center gap-2"
+                >
+                  <LogOut className="h-4 w-4" />
+                  Logout
+                </Button>
+              )}
+            </div>
           </div>
         </div>
       </nav>
