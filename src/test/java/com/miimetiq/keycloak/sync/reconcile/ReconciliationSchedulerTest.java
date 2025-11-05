@@ -1,7 +1,7 @@
 package com.miimetiq.keycloak.sync.reconcile;
 
 import io.quarkus.test.junit.QuarkusTest;
-import io.quarkus.test.junit.mockito.InjectMock;
+import io.quarkus.test.junit.QuarkusMock;
 import jakarta.inject.Inject;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -26,15 +26,18 @@ class ReconciliationSchedulerTest {
     @Inject
     ReconciliationScheduler scheduler;
 
-    @InjectMock
-    ReconciliationService reconciliationService;
-
-    @InjectMock
-    ReconcileConfig reconcileConfig;
+    private ReconciliationService reconciliationService;
+    private ReconcileConfig reconcileConfig;
 
     @BeforeEach
     void setUp() {
-        Mockito.reset(reconciliationService, reconcileConfig);
+        // Create mocks
+        reconciliationService = mock(ReconciliationService.class);
+        reconcileConfig = mock(ReconcileConfig.class);
+
+        // Install mocks using QuarkusMock
+        QuarkusMock.installMockForType(reconciliationService, ReconciliationService.class);
+        QuarkusMock.installMockForType(reconcileConfig, ReconcileConfig.class);
 
         // Default config: scheduler enabled
         when(reconcileConfig.schedulerEnabled()).thenReturn(true);
