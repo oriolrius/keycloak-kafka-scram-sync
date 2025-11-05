@@ -1,7 +1,7 @@
 ---
 id: task-049
 title: Create Dashboard page with summary cards and charts
-status: In Progress
+status: Done
 assignee:
   - '@claude'
 created_date: '2025-11-05 16:55'
