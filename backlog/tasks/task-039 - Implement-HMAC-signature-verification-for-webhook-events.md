@@ -1,9 +1,11 @@
 ---
 id: task-039
 title: Implement HMAC signature verification for webhook events
-status: To Do
-assignee: []
+status: In Progress
+assignee:
+  - '@claude'
 created_date: '2025-11-05 10:16'
+updated_date: '2025-11-05 10:22'
 labels:
   - sprint-4
   - webhook
