@@ -1,9 +1,11 @@
 ---
 id: task-041
 title: Implement retry logic for failed event processing
-status: To Do
-assignee: []
+status: In Progress
+assignee:
+  - '@claude'
 created_date: '2025-11-05 10:16'
+updated_date: '2025-11-05 10:36'
 labels:
   - sprint-4
   - retry
