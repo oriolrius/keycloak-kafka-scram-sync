@@ -1,7 +1,7 @@
 ---
 id: task-050
 title: Create Operation Timeline page with filtering and export
-status: In Progress
+status: Done
 assignee:
   - '@assistant'
 created_date: '2025-11-05 16:55'
