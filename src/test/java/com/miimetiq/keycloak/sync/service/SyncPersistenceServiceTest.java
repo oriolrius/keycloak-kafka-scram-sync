@@ -206,19 +206,21 @@ class SyncPersistenceServiceTest {
     @Test
     void testGetOperationsByPrincipal() {
         // Given: multiple batches with operations for the same principal
+        // Use unique principal name to avoid collision with other tests/scheduled reconciliation
+        String uniquePrincipal = "testuser-" + System.currentTimeMillis();
         String correlationId1 = persistenceService.createBatch("MANUAL", 1);
         String correlationId2 = persistenceService.createBatch("SCHEDULED", 1);
 
-        persistenceService.recordOperation(createOperation(correlationId1, "testuser", OperationResult.SUCCESS));
-        persistenceService.recordOperation(createOperation(correlationId2, "testuser", OperationResult.ERROR));
+        persistenceService.recordOperation(createOperation(correlationId1, uniquePrincipal, OperationResult.SUCCESS));
+        persistenceService.recordOperation(createOperation(correlationId2, uniquePrincipal, OperationResult.ERROR));
         persistenceService.recordOperation(createOperation(correlationId2, "otheruser", OperationResult.SUCCESS));
 
         // When: retrieving operations by principal
-        List<SyncOperation> operations = persistenceService.getOperationsByPrincipal("testuser");
+        List<SyncOperation> operations = persistenceService.getOperationsByPrincipal(uniquePrincipal);
 
         // Then: should return all operations for that principal
         assertEquals(2, operations.size());
-        assertTrue(operations.stream().allMatch(op -> op.getPrincipal().equals("testuser")));
+        assertTrue(operations.stream().allMatch(op -> op.getPrincipal().equals(uniquePrincipal)));
     }
 
     @Test
