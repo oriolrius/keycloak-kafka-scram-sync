@@ -5,7 +5,7 @@ status: Done
 assignee:
   - '@claude'
 created_date: '2025-11-05 16:55'
-updated_date: '2025-11-05 17:08'
+updated_date: '2025-11-05 17:12'
 labels:
   - frontend
   - ui
@@ -72,6 +72,11 @@ Successfully initialized the React frontend infrastructure for the Keycloak Kafk
   - 404 Not Found page for unmatched routes
   - BrowserRouter configuration
 
+### Development Server Configuration
+- Configured Vite dev server to run on **port 57000**
+- Preview server also configured for port 57000
+- Host exposed for network accessibility
+
 ### Build Pipeline
 - Added frontend-maven-plugin (v1.15.1) to pom.xml
 - Configured automatic Node.js (v22.19.0) and npm (10.9.3) installation
@@ -83,10 +88,16 @@ Successfully initialized the React frontend infrastructure for the Keycloak Kafk
 ### Files Modified/Created
 - `pom.xml`: Added frontend build plugins
 - `.gitignore`: Added frontend build artifacts
+- `frontend/vite.config.ts`: Configured dev server port 57000, path aliases
 - `frontend/` directory: Complete Vite + React + Tailwind setup
 - `frontend/src/pages/`: Dashboard and NotFound pages
 - `frontend/src/lib/`: Utility functions
 - `frontend/components.json`: shadcn/ui configuration
+
+## Development Workflow
+- **Dev server**: `npm run dev` → http://localhost:57000
+- **Production build**: `npm run build` → outputs to `frontend/dist/`
+- **Maven integration**: `./mvnw clean compile` → builds frontend and copies to `target/classes/META-INF/resources/`
 
 ## Testing
 - ✅ Production build succeeds: `npm run build`
