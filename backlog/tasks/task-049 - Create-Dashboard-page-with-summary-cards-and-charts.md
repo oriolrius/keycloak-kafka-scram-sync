@@ -5,7 +5,7 @@ status: In Progress
 assignee:
   - '@claude'
 created_date: '2025-11-05 16:55'
-updated_date: '2025-11-05 17:44'
+updated_date: '2025-11-05 17:49'
 labels:
   - frontend
   - dashboard
@@ -22,14 +22,14 @@ Implement the main dashboard page showing key performance indicators, connection
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Dashboard layout created with shadcn/ui Card components
-- [ ] #2 Summary cards display ops/hour, error rate, and latency metrics
-- [ ] #3 Connection status indicators show Kafka and Keycloak connectivity with timestamps
-- [ ] #4 Manual 'Force Reconcile' button triggers immediate sync via API
-- [ ] #5 Trend charts display 24h/72h operations volume using Recharts or Chart.js
-- [ ] #6 Error rate chart shows historical error trends
-- [ ] #7 All data updates automatically via TanStack Query polling
-- [ ] #8 Loading and error states display appropriately
+- [x] #1 Dashboard layout created with shadcn/ui Card components
+- [x] #2 Summary cards display ops/hour, error rate, and latency metrics
+- [x] #3 Connection status indicators show Kafka and Keycloak connectivity with timestamps
+- [x] #4 Manual 'Force Reconcile' button triggers immediate sync via API
+- [x] #5 Trend charts display 24h/72h operations volume using Recharts or Chart.js
+- [x] #6 Error rate chart shows historical error trends
+- [x] #7 All data updates automatically via TanStack Query polling
+- [x] #8 Loading and error states display appropriately
 <!-- AC:END -->
 
 ## Implementation Plan
