@@ -5,7 +5,7 @@ status: In Progress
 assignee:
   - '@claude'
 created_date: '2025-11-05 06:17'
-updated_date: '2025-11-05 09:25'
+updated_date: '2025-11-05 09:27'
 labels:
   - sprint-3
   - retention
@@ -30,3 +30,29 @@ Implement GET and PUT endpoints at /api/config/retention for reading and updatin
 - [ ] #5 Endpoints documented in OpenAPI specification
 - [ ] #6 Integration tests verify GET and PUT operations
 <!-- AC:END -->
+
+## Implementation Plan
+
+<!-- SECTION:PLAN:BEGIN -->
+1. Create RetentionConfigResource.java following ReconciliationResource pattern
+   - Use @Path("/api/config/retention")
+   - Inject RetentionService via CDI
+   
+2. Implement GET endpoint
+   - Call retentionService.getRetentionState()
+   - Return DTO with max_bytes, max_age_days, approx_db_bytes, updated_at
+   
+3. Implement PUT endpoint with validation
+   - Accept RetentionConfigUpdateRequest DTO
+   - Validate: non-negative values, reasonable limits (max_bytes < 10GB, max_age_days < 3650)
+   - Call retentionService.updateRetentionConfig()
+   - Return updated configuration
+   
+4. Add OpenAPI annotations (@Operation, @APIResponse)
+   
+5. Create integration test RetentionConfigResourceIntegrationTest
+   - Test GET returns current config
+   - Test PUT updates config
+   - Test PUT validation (negative values, unreasonable limits)
+   - Test PUT partial updates (only max_bytes or only max_age_days)
+<!-- SECTION:PLAN:END -->
