@@ -107,7 +107,7 @@ export default function Dashboard() {
               Reconciliation Completed
             </CardTitle>
             <CardDescription className="text-green-600 dark:text-green-400">
-              Successful: {reconcileTrigger.data.successfulOperations} | Failed: {reconcileTrigger.data.failedOperations} | Duration: {reconcileTrigger.data.durationMs}ms
+              Correlation ID: {reconcileTrigger.data.correlationId} | Successful: {reconcileTrigger.data.successfulOperations} | Failed: {reconcileTrigger.data.failedOperations} | Duration: {reconcileTrigger.data.durationMs}ms
             </CardDescription>
           </CardHeader>
         </Card>
