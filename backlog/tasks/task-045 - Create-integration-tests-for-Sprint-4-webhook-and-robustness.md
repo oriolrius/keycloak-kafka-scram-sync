@@ -1,9 +1,11 @@
 ---
 id: task-045
 title: Create integration tests for Sprint 4 webhook and robustness
-status: To Do
-assignee: []
+status: In Progress
+assignee:
+  - '@claude'
 created_date: '2025-11-05 10:16'
+updated_date: '2025-11-05 16:43'
 labels:
   - sprint-4
   - testing
