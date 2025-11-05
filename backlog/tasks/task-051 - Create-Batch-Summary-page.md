@@ -1,7 +1,7 @@
 ---
 id: task-051
 title: Create Batch Summary page
-status: In Progress
+status: Done
 assignee:
   - '@claude'
 created_date: '2025-11-05 16:55'
