@@ -5,7 +5,7 @@ status: In Progress
 assignee:
   - '@claude'
 created_date: '2025-11-05 16:55'
-updated_date: '2025-11-05 17:05'
+updated_date: '2025-11-05 17:06'
 labels:
   - frontend
   - ui
@@ -25,7 +25,7 @@ Set up the frontend infrastructure for the sync agent dashboard using Vite + Rea
 - [x] #1 Vite project initialized with React 18 and TypeScript
 - [x] #2 Tailwind CSS configured and working
 - [x] #3 shadcn/ui components library installed and configured
-- [ ] #4 Basic routing setup with React Router
+- [x] #4 Basic routing setup with React Router
 - [ ] #5 Development server runs and hot-reload works
 - [ ] #6 Build process produces optimized static assets
 - [ ] #7 Static assets can be served from Quarkus backend
