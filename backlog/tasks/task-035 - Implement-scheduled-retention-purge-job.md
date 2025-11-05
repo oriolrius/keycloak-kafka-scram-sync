@@ -5,7 +5,7 @@ status: In Progress
 assignee:
   - '@claude'
 created_date: '2025-11-05 06:17'
-updated_date: '2025-11-05 09:25'
+updated_date: '2025-11-05 09:27'
 labels:
   - sprint-3
   - retention
@@ -30,3 +30,34 @@ Create a scheduled background job that executes retention purge logic periodical
 - [ ] #5 Configuration loads RETENTION_PURGE_INTERVAL_SECONDS from environment
 - [ ] #6 Unit tests verify scheduling behavior and error handling
 <!-- AC:END -->
+
+## Implementation Plan
+
+<!-- SECTION:PLAN:BEGIN -->
+1. Create RetentionScheduler.java following ReconciliationScheduler pattern
+   - Use @Scheduled(every = "${retention.purge-interval-seconds}s")
+   - Use SKIP concurrent execution policy
+   - Add AtomicBoolean to prevent overlapping runs
+   
+2. Implement scheduled purge job
+   - Call retentionService.purgeTtl() for time-based cleanup
+   - Call retentionService.purgeBySize() for space-based cleanup
+   - Call retentionService.executeVacuum() to reclaim space
+   - Handle null limits gracefully (skip if not configured)
+   
+3. Add post-sync-batch purge trigger
+   - Modify ReconciliationService.java after line 273 (batch completion)
+   - Inject RetentionService and call purge methods
+   - Run asynchronously to not block sync completion
+   
+4. Error handling and logging
+   - Wrap purge calls in try-catch
+   - Log errors but don't fail the job
+   - Log purge results (operations deleted, space reclaimed)
+   
+5. Create RetentionSchedulerTest
+   - Test scheduling behavior (interval configuration)
+   - Test concurrent execution prevention
+   - Test error handling (exceptions don't break scheduler)
+   - Test that purge is called after sync batch
+<!-- SECTION:PLAN:END -->
