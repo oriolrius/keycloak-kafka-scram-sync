@@ -26,10 +26,10 @@ Set up TanStack Query (React Query) for managing server state, caching, and poll
 - [x] #2 Custom hooks created for fetching summary data
 - [x] #3 Custom hooks created for fetching operations with pagination
 - [x] #4 Custom hooks created for fetching batches
-- [ ] #5 Custom hooks created for retention configuration
-- [ ] #6 Automatic polling configured (default 10s refresh)
-- [ ] #7 Error handling and loading states properly managed
-- [ ] #8 Cache invalidation works correctly after mutations
+- [x] #5 Custom hooks created for retention configuration
+- [x] #6 Automatic polling configured (default 10s refresh)
+- [x] #7 Error handling and loading states properly managed
+- [x] #8 Cache invalidation works correctly after mutations
 <!-- AC:END -->
 
 ## Implementation Plan
