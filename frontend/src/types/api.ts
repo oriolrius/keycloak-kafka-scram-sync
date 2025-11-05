@@ -78,9 +78,10 @@ export interface BatchesPageResponse {
 }
 
 export interface RetentionConfig {
-  maxAgeDays: number;
-  maxRecords: number;
-  cleanupIntervalHours: number;
+  maxBytes?: number | null;       // Maximum database size in bytes (nullable, can be disabled)
+  maxAgeDays?: number | null;     // Maximum age of records in days (nullable, can be disabled)
+  approxDbBytes: number;           // Approximate current database size in bytes
+  updatedAt: string;               // Last update timestamp (ISO 8601 datetime)
 }
 
 export enum OperationType {

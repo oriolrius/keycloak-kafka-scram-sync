@@ -4,6 +4,7 @@ import { useReconcileStatus, useReconcileTrigger } from '../hooks/useReconcile'
 import { useOperationsHistory } from '../hooks/useOperationsHistory'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card'
 import { Button } from '../components/ui/button'
+import RetentionPanel from '../components/RetentionPanel'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
 import { Activity, AlertCircle, Clock, Database, Server, RefreshCw } from 'lucide-react'
 
@@ -304,6 +305,9 @@ export default function Dashboard() {
           )}
         </CardContent>
       </Card>
+
+      {/* Retention Policy Panel */}
+      <RetentionPanel />
     </div>
   )
 }
