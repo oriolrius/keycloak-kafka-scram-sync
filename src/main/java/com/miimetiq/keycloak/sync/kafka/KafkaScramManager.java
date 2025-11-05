@@ -2,6 +2,8 @@ package com.miimetiq.keycloak.sync.kafka;
 
 import com.miimetiq.keycloak.sync.domain.ScramCredential;
 import com.miimetiq.keycloak.sync.domain.enums.ScramMechanism;
+import com.miimetiq.keycloak.sync.metrics.SyncMetrics;
+import io.micrometer.core.instrument.Timer;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import org.apache.kafka.clients.admin.AdminClient;
@@ -44,6 +46,9 @@ public class KafkaScramManager {
     @Inject
     AdminClient adminClient;
 
+    @Inject
+    SyncMetrics syncMetrics;
+
     /**
      * Describes SCRAM credentials for all users in Kafka.
      * <p>
@@ -70,6 +75,7 @@ public class KafkaScramManager {
         LOG.infof("Describing SCRAM credentials for %s",
                 principals == null || principals.isEmpty() ? "all users" : principals.size() + " users");
 
+        Timer.Sample sample = syncMetrics.startAdminOpTimer();
         try {
             DescribeUserScramCredentialsResult result;
             if (principals == null || principals.isEmpty()) {
@@ -88,9 +94,11 @@ public class KafkaScramManager {
             });
 
             LOG.infof("Successfully described SCRAM credentials for %d users", credentials.size());
+            syncMetrics.recordAdminOpDuration(sample, "describe");
             return credentials;
 
         } catch (ExecutionException e) {
+            syncMetrics.recordAdminOpDuration(sample, "describe");
             Throwable cause = e.getCause();
             if (cause instanceof UnsupportedVersionException) {
                 LOG.error("Kafka broker does not support SCRAM credential management", e);
@@ -99,9 +107,11 @@ public class KafkaScramManager {
             LOG.errorf(e, "Failed to describe SCRAM credentials");
             throw new KafkaScramException("Failed to describe SCRAM credentials: " + cause.getMessage(), cause);
         } catch (InterruptedException e) {
+            syncMetrics.recordAdminOpDuration(sample, "describe");
             Thread.currentThread().interrupt();
             throw new KafkaScramException("Operation interrupted while describing SCRAM credentials", e);
         } catch (Exception e) {
+            syncMetrics.recordAdminOpDuration(sample, "describe");
             LOG.errorf(e, "Unexpected error describing SCRAM credentials");
             throw new KafkaScramException("Unexpected error describing SCRAM credentials: " + e.getMessage(), e);
         }
@@ -239,22 +249,28 @@ public class KafkaScramManager {
 
         LOG.infof("Executing %d SCRAM credential alteration(s)", alterations.size());
 
+        // Count operation types
+        long upserts = alterations.stream()
+                .filter(a -> a instanceof UserScramCredentialUpsertion)
+                .count();
+        long deletes = alterations.stream()
+                .filter(a -> a instanceof UserScramCredentialDeletion)
+                .count();
+
+        // Start appropriate timer based on predominant operation type
+        String opType = upserts > deletes ? "upsert" : "delete";
+        Timer.Sample sample = syncMetrics.startAdminOpTimer();
+
         try {
             AlterUserScramCredentialsResult result = adminClient.alterUserScramCredentials(alterations);
 
-            // Log the operation types
-            long upserts = alterations.stream()
-                    .filter(a -> a instanceof UserScramCredentialUpsertion)
-                    .count();
-            long deletes = alterations.stream()
-                    .filter(a -> a instanceof UserScramCredentialDeletion)
-                    .count();
-
             LOG.infof("Submitted %d upsert(s) and %d deletion(s) to Kafka", upserts, deletes);
+            syncMetrics.recordAdminOpDuration(sample, opType);
 
             return result;
 
         } catch (Exception e) {
+            syncMetrics.recordAdminOpDuration(sample, opType);
             LOG.errorf(e, "Failed to alter SCRAM credentials");
             throw new KafkaScramException("Failed to alter SCRAM credentials: " + e.getMessage(), e);
         }

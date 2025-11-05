@@ -7,6 +7,9 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import org.jboss.logging.Logger;
 
+import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -21,105 +24,170 @@ public class SyncMetrics {
     @Inject
     MeterRegistry registry;
 
-    // Counters for sync operations
-    private Counter usersSyncedCounter;
-    private Counter syncErrorsCounter;
-    private Counter kafkaPublishCounter;
-    private Counter keycloakEventCounter;
-
-    // Timers for operation duration
-    private Timer syncOperationTimer;
-    private Timer kafkaPublishTimer;
-
     // Gauges for current state
     private final AtomicLong lastSyncTimestamp = new AtomicLong(0);
     private final AtomicLong activeSync = new AtomicLong(0);
+    private final AtomicLong lastSuccessEpochSeconds = new AtomicLong(0);
+    private final AtomicLong dbSizeBytes = new AtomicLong(0);
+
+    // Database path for size tracking
+    private volatile String databasePath = "sync-agent.db";
 
     /**
      * Initialize metrics on startup.
      */
     public void init() {
-        // Counters
-        usersSyncedCounter = Counter.builder("sync.users.total")
-                .description("Total number of users synced from Keycloak to Kafka")
-                .register(registry);
+        // Gauges for last successful reconciliation and database size
+        registry.gauge("sync_last_success_epoch_seconds", lastSuccessEpochSeconds);
+        registry.gauge("sync_db_size_bytes", dbSizeBytes, AtomicLong::get);
 
-        syncErrorsCounter = Counter.builder("sync.errors.total")
-                .description("Total number of sync errors")
-                .register(registry);
-
-        kafkaPublishCounter = Counter.builder("sync.kafka.published.total")
-                .description("Total number of events published to Kafka")
-                .register(registry);
-
-        keycloakEventCounter = Counter.builder("sync.keycloak.events.total")
-                .description("Total number of events received from Keycloak")
-                .register(registry);
-
-        // Timers
-        syncOperationTimer = Timer.builder("sync.operation.duration")
-                .description("Duration of sync operations")
-                .register(registry);
-
-        kafkaPublishTimer = Timer.builder("sync.kafka.publish.duration")
-                .description("Duration of Kafka publish operations")
-                .register(registry);
-
-        // Gauges
+        // Legacy gauges (kept for backward compatibility)
         registry.gauge("sync.last.timestamp", lastSyncTimestamp);
         registry.gauge("sync.active.operations", activeSync);
 
         LOG.info("Sync metrics initialized");
     }
 
+    // ========== Keycloak Fetch Metrics ==========
+
     /**
-     * Increment users synced counter.
+     * Increment counter for Keycloak user fetches.
+     *
+     * @param realm the Keycloak realm
+     * @param source the reconciliation source (SCHEDULED, MANUAL, WEBHOOK)
      */
-    public void incrementUsersSynced() {
-        usersSyncedCounter.increment();
+    public void incrementKeycloakFetch(String realm, String source) {
+        Counter.builder("sync_kc_fetch_total")
+                .description("Total number of Keycloak user fetches")
+                .tag("realm", realm)
+                .tag("source", source)
+                .register(registry)
+                .increment();
+    }
+
+    // ========== Kafka SCRAM Operation Metrics ==========
+
+    /**
+     * Increment counter for Kafka SCRAM upsert operations.
+     *
+     * @param clusterId the Kafka cluster ID (bootstrap servers)
+     * @param mechanism the SCRAM mechanism (SCRAM-SHA-256, SCRAM-SHA-512)
+     * @param result the operation result (SUCCESS, ERROR)
+     */
+    public void incrementKafkaScramUpsert(String clusterId, String mechanism, String result) {
+        Counter.builder("sync_kafka_scram_upserts_total")
+                .description("Total number of Kafka SCRAM credential upserts")
+                .tag("cluster_id", clusterId)
+                .tag("mechanism", mechanism)
+                .tag("result", result)
+                .register(registry)
+                .increment();
     }
 
     /**
-     * Increment users synced counter by a specific amount.
+     * Increment counter for Kafka SCRAM delete operations.
+     *
+     * @param clusterId the Kafka cluster ID (bootstrap servers)
+     * @param result the operation result (SUCCESS, ERROR)
      */
-    public void incrementUsersSynced(long count) {
-        usersSyncedCounter.increment(count);
+    public void incrementKafkaScramDelete(String clusterId, String result) {
+        Counter.builder("sync_kafka_scram_deletes_total")
+                .description("Total number of Kafka SCRAM credential deletes")
+                .tag("cluster_id", clusterId)
+                .tag("result", result)
+                .register(registry)
+                .increment();
+    }
+
+    // ========== Timers ==========
+
+    /**
+     * Record reconciliation duration.
+     *
+     * @param realm the Keycloak realm
+     * @param clusterId the Kafka cluster ID
+     * @param source the reconciliation source
+     * @return Timer.Sample to stop timing later
+     */
+    public Timer.Sample startReconciliationTimer() {
+        return Timer.start(registry);
     }
 
     /**
-     * Increment sync errors counter.
+     * Stop and record reconciliation duration.
+     *
+     * @param sample the timer sample from startReconciliationTimer()
+     * @param realm the Keycloak realm
+     * @param clusterId the Kafka cluster ID
+     * @param source the reconciliation source
      */
-    public void incrementSyncErrors() {
-        syncErrorsCounter.increment();
+    public void recordReconciliationDuration(Timer.Sample sample, String realm, String clusterId, String source) {
+        sample.stop(Timer.builder("sync_reconcile_duration_seconds")
+                .description("Duration of reconciliation operations")
+                .tag("realm", realm)
+                .tag("cluster_id", clusterId)
+                .tag("source", source)
+                .register(registry));
     }
 
     /**
-     * Increment Kafka published events counter.
+     * Record admin operation duration.
+     *
+     * @param sample the timer sample
+     * @param op the operation name (upsert, delete, describe)
      */
-    public void incrementKafkaPublished() {
-        kafkaPublishCounter.increment();
+    public void recordAdminOpDuration(Timer.Sample sample, String op) {
+        sample.stop(Timer.builder("sync_admin_op_duration_seconds")
+                .description("Duration of Kafka admin operations")
+                .tag("op", op)
+                .register(registry));
     }
 
     /**
-     * Increment Keycloak events counter.
+     * Start a timer for admin operations.
      */
-    public void incrementKeycloakEvents() {
-        keycloakEventCounter.increment();
+    public Timer.Sample startAdminOpTimer() {
+        return Timer.start(registry);
+    }
+
+    // ========== Gauges ==========
+
+    /**
+     * Update last successful reconciliation timestamp.
+     */
+    public void updateLastSuccessEpoch() {
+        lastSuccessEpochSeconds.set(System.currentTimeMillis() / 1000);
+        LOG.debug("Updated last success epoch seconds");
     }
 
     /**
-     * Get sync operation timer for recording duration.
+     * Update database size in bytes.
      */
-    public Timer getSyncOperationTimer() {
-        return syncOperationTimer;
+    public void updateDatabaseSize() {
+        try {
+            File dbFile = new File(databasePath);
+            if (dbFile.exists()) {
+                long size = dbFile.length();
+                dbSizeBytes.set(size);
+                LOG.debugf("Updated database size: %d bytes", size);
+            } else {
+                LOG.tracef("Database file not found: %s", databasePath);
+            }
+        } catch (Exception e) {
+            LOG.warnf(e, "Failed to update database size metric");
+        }
     }
 
     /**
-     * Get Kafka publish timer for recording duration.
+     * Set the database path for size tracking.
+     *
+     * @param path the database file path
      */
-    public Timer getKafkaPublishTimer() {
-        return kafkaPublishTimer;
+    public void setDatabasePath(String path) {
+        this.databasePath = path;
     }
+
+    // ========== Legacy Methods (Backward Compatibility) ==========
 
     /**
      * Update last sync timestamp.

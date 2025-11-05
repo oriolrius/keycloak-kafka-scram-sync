@@ -13,6 +13,8 @@ import com.miimetiq.keycloak.sync.kafka.KafkaScramManager;
 import com.miimetiq.keycloak.sync.kafka.KafkaScramManager.CredentialSpec;
 import com.miimetiq.keycloak.sync.keycloak.KeycloakConfig;
 import com.miimetiq.keycloak.sync.keycloak.KeycloakUserFetcher;
+import com.miimetiq.keycloak.sync.metrics.SyncMetrics;
+import io.micrometer.core.instrument.Timer;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.persistence.EntityManager;
@@ -76,6 +78,9 @@ public class ReconciliationService {
     @Inject
     EntityManager entityManager;
 
+    @Inject
+    SyncMetrics syncMetrics;
+
     /**
      * Performs a complete reconciliation cycle.
      * <p>
@@ -90,6 +95,10 @@ public class ReconciliationService {
         // Step 1: Generate correlation ID and start timing
         String correlationId = generateCorrelationId();
         LocalDateTime startedAt = LocalDateTime.now();
+        Timer.Sample reconciliationTimer = syncMetrics.startReconciliationTimer();
+
+        String realm = keycloakConfig.realm();
+        String clusterId = kafkaConfig.bootstrapServers();
 
         LOG.infof("Starting reconciliation cycle with correlation_id=%s, source=%s", correlationId, source);
 
@@ -98,6 +107,9 @@ public class ReconciliationService {
             LOG.info("Fetching users from Keycloak...");
             List<KeycloakUserInfo> users = keycloakUserFetcher.fetchAllUsers();
             LOG.infof("Fetched %d users from Keycloak", users.size());
+
+            // Record Keycloak fetch metric
+            syncMetrics.incrementKeycloakFetch(realm, source);
 
             // Step 3: Create sync_batch record
             SyncBatch batch = createSyncBatch(correlationId, startedAt, source, users.size());
@@ -145,9 +157,13 @@ public class ReconciliationService {
                 if (error == null) {
                     successCount++;
                     batch.incrementSuccess();
+                    // Record successful SCRAM upsert metric
+                    syncMetrics.incrementKafkaScramUpsert(clusterId, DEFAULT_MECHANISM.name(), "SUCCESS");
                 } else {
                     errorCount++;
                     batch.incrementError();
+                    // Record failed SCRAM upsert metric
+                    syncMetrics.incrementKafkaScramUpsert(clusterId, DEFAULT_MECHANISM.name(), "ERROR");
                     LOG.warnf("Failed to upsert SCRAM credential for principal '%s': %s",
                             principal, error.getMessage());
                 }
@@ -162,7 +178,12 @@ public class ReconciliationService {
                     correlationId, successCount, errorCount,
                     java.time.Duration.between(startedAt, finishedAt).toMillis());
 
-            // Step 9: Return result summary
+            // Step 9: Record metrics
+            syncMetrics.recordReconciliationDuration(reconciliationTimer, realm, clusterId, source);
+            syncMetrics.updateLastSuccessEpoch();
+            syncMetrics.updateDatabaseSize();
+
+            // Step 10: Return result summary
             return new ReconciliationResult(
                     correlationId,
                     startedAt,
@@ -175,6 +196,8 @@ public class ReconciliationService {
 
         } catch (Exception e) {
             LOG.errorf(e, "Reconciliation cycle failed with correlation_id=%s", correlationId);
+            // Still record the timer even on failure
+            syncMetrics.recordReconciliationDuration(reconciliationTimer, realm, clusterId, source);
             throw new ReconciliationException("Reconciliation failed: " + e.getMessage(), e);
         }
     }
