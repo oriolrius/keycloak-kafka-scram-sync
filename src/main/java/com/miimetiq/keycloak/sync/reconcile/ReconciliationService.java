@@ -87,6 +87,9 @@ public class ReconciliationService {
     @Inject
     SyncDiffEngine syncDiffEngine;
 
+    @Inject
+    com.miimetiq.keycloak.sync.retention.RetentionScheduler retentionScheduler;
+
     /**
      * Performs a complete reconciliation cycle.
      * <p>
@@ -281,7 +284,15 @@ public class ReconciliationService {
             syncMetrics.updateLastSuccessEpoch();
             syncMetrics.updateDatabaseSize();
 
-            // Step 10: Return result summary
+            // Step 10: Trigger retention purge after batch completion
+            try {
+                retentionScheduler.triggerPostSyncPurge();
+            } catch (Exception e) {
+                LOG.warnf(e, "Post-sync retention purge failed, but will continue: %s", e.getMessage());
+                // Don't fail the reconciliation if purge fails
+            }
+
+            // Step 11: Return result summary
             return new ReconciliationResult(
                     correlationId,
                     startedAt,
