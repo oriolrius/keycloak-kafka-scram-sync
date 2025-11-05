@@ -1,9 +1,11 @@
 ---
 id: task-044
 title: Add Prometheus metrics for webhook and retry operations
-status: To Do
-assignee: []
+status: In Progress
+assignee:
+  - '@claude'
 created_date: '2025-11-05 10:16'
+updated_date: '2025-11-05 16:30'
 labels:
   - sprint-4
   - metrics
