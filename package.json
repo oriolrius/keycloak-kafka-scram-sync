@@ -9,6 +9,11 @@
     "test:api:headed": "playwright test --headed --config=tests/playwright.config.ts",
     "test:api:debug": "playwright test --debug --config=tests/playwright.config.ts",
     "test:api:report": "playwright show-report tests/test-results/html",
+    "test:ui": "playwright test --config=tests/playwright-ui.config.ts",
+    "test:ui:headed": "playwright test --headed --config=tests/playwright-ui.config.ts",
+    "test:ui:debug": "playwright test --debug --config=tests/playwright-ui.config.ts",
+    "test:ui:report": "playwright show-report tests/test-results/html-ui",
+    "test:all": "npm run test:api && npm run test:ui",
     "test:install": "playwright install chromium"
   },
   "devDependencies": {
