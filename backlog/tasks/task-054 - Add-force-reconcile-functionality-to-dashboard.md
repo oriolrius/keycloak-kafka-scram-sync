@@ -23,15 +23,15 @@ Implement the manual sync trigger button on the dashboard that allows operators 
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 POST /api/reconcile/trigger endpoint implemented in backend
-- [ ] #2 Endpoint validates authentication and authorization
-- [ ] #3 Endpoint enqueues immediate reconciliation job
-- [ ] #4 Returns correlation_id for tracking the triggered reconciliation
-- [ ] #5 Force Reconcile button visible on dashboard
-- [ ] #6 Button disabled during active reconciliation
-- [ ] #7 Success notification shows correlation_id
-- [ ] #8 Error notification on failure with error details
-- [ ] #9 Button re-enables after reconciliation completes
+- [x] #1 POST /api/reconcile/trigger endpoint implemented in backend
+- [x] #2 Endpoint validates authentication and authorization
+- [x] #3 Endpoint enqueues immediate reconciliation job
+- [x] #4 Returns correlation_id for tracking the triggered reconciliation
+- [x] #5 Force Reconcile button visible on dashboard
+- [x] #6 Button disabled during active reconciliation
+- [x] #7 Success notification shows correlation_id
+- [x] #8 Error notification on failure with error details
+- [x] #9 Button re-enables after reconciliation completes
 <!-- AC:END -->
 
 ## Implementation Plan
