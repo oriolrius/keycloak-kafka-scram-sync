@@ -9,11 +9,13 @@ import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.container.ContainerRequestFilter;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.ext.Provider;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.eclipse.microprofile.jwt.JsonWebToken;
 import org.jboss.logging.Logger;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
+import java.util.Optional;
 import java.util.Set;
 
 /**
@@ -26,8 +28,14 @@ public class DashboardAuthFilter implements ContainerRequestFilter {
 
     private static final Logger LOG = Logger.getLogger(DashboardAuthFilter.class);
 
-    @Inject
-    DashboardAuthConfig config;
+    @ConfigProperty(name = "dashboard.basic-auth")
+    Optional<String> basicAuth;
+
+    @ConfigProperty(name = "dashboard.oidc-enabled", defaultValue = "false")
+    boolean oidcEnabled;
+
+    @ConfigProperty(name = "dashboard.oidc-required-role", defaultValue = "dashboard-admin")
+    String oidcRequiredRole;
 
     @Inject
     SecurityIdentity securityIdentity;
@@ -46,7 +54,7 @@ public class DashboardAuthFilter implements ContainerRequestFilter {
         }
 
         // If no auth configured, allow all requests (backward compatibility)
-        if (config.basicAuth().isEmpty() && !config.oidcEnabled()) {
+        if (basicAuth.isEmpty() && !oidcEnabled) {
             LOG.trace("Dashboard authentication is disabled (no DASHBOARD_BASIC_AUTH configured)");
             return;
         }
@@ -55,7 +63,7 @@ public class DashboardAuthFilter implements ContainerRequestFilter {
         String authHeader = requestContext.getHeaderString("Authorization");
 
         // Handle OIDC authentication
-        if (config.oidcEnabled()) {
+        if (oidcEnabled) {
             if (authHeader != null && authHeader.startsWith("Bearer ")) {
                 // OIDC token present - validate it
                 if (!validateOidcToken()) {
@@ -67,7 +75,7 @@ public class DashboardAuthFilter implements ContainerRequestFilter {
                 // Check role-based access control
                 if (!validateOidcRole()) {
                     LOG.debugf("User does not have required role '%s' for path: %s",
-                              config.oidcRequiredRole(), path);
+                              oidcRequiredRole, path);
                     abortWithForbidden(requestContext);
                     return;
                 }
@@ -77,7 +85,7 @@ public class DashboardAuthFilter implements ContainerRequestFilter {
             }
 
             // If OIDC is enabled but no Bearer token, try Basic Auth as fallback
-            if (config.basicAuth().isEmpty()) {
+            if (basicAuth.isEmpty()) {
                 LOG.debugf("Missing Bearer token and no Basic Auth configured for path: %s", path);
                 abortWithUnauthorized(requestContext);
                 return;
@@ -109,7 +117,7 @@ public class DashboardAuthFilter implements ContainerRequestFilter {
      * @return true if credentials are valid
      */
     private boolean validateBasicAuth(String authHeader) {
-        if (config.basicAuth().isEmpty()) {
+        if (basicAuth.isEmpty()) {
             return false;
         }
 
@@ -120,7 +128,7 @@ public class DashboardAuthFilter implements ContainerRequestFilter {
             String credentials = new String(decodedBytes, StandardCharsets.UTF_8);
 
             // Compare with configured credentials
-            String expectedCredentials = config.basicAuth().get();
+            String expectedCredentials = basicAuth.get();
 
             return credentials.equals(expectedCredentials);
 
@@ -165,16 +173,14 @@ public class DashboardAuthFilter implements ContainerRequestFilter {
      */
     private boolean validateOidcRole() {
         try {
-            String requiredRole = config.oidcRequiredRole();
-
             // Check if user has the required role
-            boolean hasRole = securityIdentity.hasRole(requiredRole);
+            boolean hasRole = securityIdentity.hasRole(oidcRequiredRole);
 
             if (hasRole) {
-                LOG.tracef("User '%s' has required role '%s'", jwt.getName(), requiredRole);
+                LOG.tracef("User '%s' has required role '%s'", jwt.getName(), oidcRequiredRole);
             } else {
                 LOG.debugf("User '%s' missing required role '%s'. User roles: %s",
-                          jwt.getName(), requiredRole, securityIdentity.getRoles());
+                          jwt.getName(), oidcRequiredRole, securityIdentity.getRoles());
             }
 
             return hasRole;
@@ -191,7 +197,7 @@ public class DashboardAuthFilter implements ContainerRequestFilter {
      * @param requestContext request context
      */
     private void abortWithUnauthorized(ContainerRequestContext requestContext) {
-        String authHeader = config.oidcEnabled() ?
+        String authHeader = oidcEnabled ?
             "Bearer realm=\"Dashboard\"" : "Basic realm=\"Dashboard\"";
 
         requestContext.abortWith(
@@ -211,7 +217,7 @@ public class DashboardAuthFilter implements ContainerRequestFilter {
         requestContext.abortWith(
                 Response.status(Response.Status.FORBIDDEN)
                         .entity("{\"error\": \"Insufficient permissions. Required role: " +
-                               config.oidcRequiredRole() + "\"}")
+                               oidcRequiredRole + "\"}")
                         .build()
         );
     }
