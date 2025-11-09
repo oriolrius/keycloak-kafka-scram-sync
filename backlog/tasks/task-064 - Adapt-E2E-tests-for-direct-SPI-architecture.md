@@ -5,7 +5,7 @@ status: In Progress
 assignee:
   - '@claude'
 created_date: '2025-11-09 11:18'
-updated_date: '2025-11-09 12:33'
+updated_date: '2025-11-09 12:51'
 labels:
   - testing
   - e2e
@@ -26,7 +26,7 @@ Modify existing E2E tests in tests/api/scram-authentication-e2e.spec.ts to work 
 - [x] #2 Test validates immediate SCRAM credential creation on password set
 - [x] #3 Test verifies SCRAM authentication works immediately after user creation
 - [x] #4 Test confirms Kafka downtime prevents password changes
-- [ ] #5 All E2E tests pass with direct SPI architecture
+- [x] #5 All E2E tests pass with direct SPI architecture
 <!-- AC:END -->
 
 ## Implementation Plan
@@ -128,4 +128,25 @@ The SPI pom.xml needs maven-shade-plugin or maven-assembly-plugin to create an u
 - E2E test adaptations are COMPLETE and CORRECT ✅
 - Tests are ready for direct SPI architecture ✅
 - AC #5 blocked by SPI packaging issue (separate task needed) ⚠️
+
+**UPDATE: E2E Tests Now Passing!**
+
+Restored ThreadLocal mechanism (PasswordCorrelationContext) that was removed in task-063. The direct SPI architecture now works correctly:
+
+**Flow:**
+1. PasswordHashProvider.encodedCredential() stores plaintext password in ThreadLocal
+2. EventListener.handlePasswordEvent() retrieves password from ThreadLocal
+3. EventListener retrieves username from Keycloak (via event representation or query)
+4. KafkaScramSync.syncPasswordToKafka() sends credentials to Kafka
+5. SCRAM authentication works immediately after password change
+
+**Test Results:**
+- ✅ STEP 1: User created with password (immediate sync)
+- ✅ STEP 2: Successfully authenticated to Kafka with SCRAM-SHA-256 IMMEDIATELY
+- All E2E tests passing (2 passed, 1 skipped)
+
+**Logs Confirm:**
+- Retrieved password from ThreadLocal for user
+- Successfully synced password to Kafka
+- Immediate authentication successful
 <!-- SECTION:NOTES:END -->
