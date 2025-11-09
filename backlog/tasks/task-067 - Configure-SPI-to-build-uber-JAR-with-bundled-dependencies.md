@@ -29,3 +29,16 @@ The Keycloak Password Sync SPI currently builds a slim JAR without bundling its 
 - [ ] #4 SPI logs confirm it loaded correctly in Keycloak
 - [ ] #5 E2E tests from task-64 pass with the deployed SPI
 <!-- AC:END -->
+
+## Implementation Plan
+
+<!-- SECTION:PLAN:BEGIN -->
+1. Locate and examine the SPI pom.xml file
+2. Add maven-shade-plugin configuration to create uber JAR with all dependencies
+3. Configure plugin to include Kafka client and transitive dependencies
+4. Build the SPI and verify JAR contents
+5. Deploy uber JAR to Keycloak providers directory
+6. Start Keycloak and verify startup succeeds
+7. Check Keycloak logs to confirm SPI loaded correctly
+8. Run E2E tests from task-64 to validate functionality
+<!-- SECTION:PLAN:END -->
