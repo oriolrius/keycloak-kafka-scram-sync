@@ -30,7 +30,10 @@ public interface ReconcileConfig {
      * Enable or disable scheduled reconciliation.
      * When disabled, reconciliation can only be triggered manually via REST endpoint.
      * Can be overridden with RECONCILE_SCHEDULER_ENABLED environment variable.
+     *
+     * Note: With direct Kafka SPI, passwords are synced immediately on changes.
+     * Scheduled reconciliation is now disabled by default and serves as a manual safety net only.
      */
-    @WithDefault("true")
+    @WithDefault("false")
     boolean schedulerEnabled();
 }

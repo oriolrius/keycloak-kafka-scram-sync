@@ -1,11 +1,13 @@
 # Keycloak ➡️ Kafka Sync Agent
 
-The Keycloak → Kafka Sync Agent acts as a real-time identity and authorization bridge. Built on Quarkus, it synchronizes users, clients, and roles from Keycloak into Kafka’s metadata store—managing SCRAM verifiers and ACLs dynamically, recording every operation in SQLite, and exposing telemetry and a dashboard for full operational transparency.
+The Keycloak → Kafka Sync Agent acts as a real-time identity and authorization bridge. Built on Quarkus, it synchronizes users, clients, and roles from Keycloak into Kafka's metadata store—managing SCRAM verifiers and ACLs dynamically, recording every operation in SQLite, and exposing telemetry and a dashboard for full operational transparency.
+
+**Architecture**: Password synchronization happens **immediately** via direct Kafka connection from within the Keycloak SPI. No webhook endpoints or password caching required. See [decision-003](backlog/decisions/decision-003%20-%20Direct%20Kafka%20SPI%20Architecture.md) for the architecture decision record.
 
 ## Features
 
-- 🔄 **Real-time Event Processing**: Listens to Keycloak admin events via webhooks
-- 📊 **Periodic Reconciliation**: Regularly syncs all users to ensure consistency
+- ⚡ **Immediate Password Sync**: Direct Kafka synchronization from Keycloak SPI (real-time, no delays)
+- 🔄 **Manual Reconciliation**: On-demand full sync for consistency checks (automated sync disabled by default)
 - 💾 **Event Persistence**: SQLite-based event storage with automatic retention management
 - 📈 **Metrics & Health**: Prometheus metrics and health check endpoints
 - 🐳 **Docker Ready**: Multi-stage optimized Docker builds
@@ -113,12 +115,26 @@ All configuration can be overridden with environment variables:
 - `KEYCLOAK_ADMIN_PASSWORD` - Admin password (default: `The2password.`)
 - `KEYCLOAK_CONNECTION_TIMEOUT_MS` - Connection timeout (default: `10000`)
 - `KEYCLOAK_READ_TIMEOUT_MS` - Read timeout (default: `30000`)
-- `KEYCLOAK_WEBHOOK_HMAC_SECRET` - HMAC secret for webhook validation
+#### Keycloak SPI (Direct Kafka Sync)
+
+The Keycloak SPI syncs passwords directly to Kafka. Configure these environment variables in your Keycloak deployment:
+
+- `KAFKA_BOOTSTRAP_SERVERS` - Kafka broker addresses (required for SPI)
+- `KAFKA_SASL_MECHANISM` - SASL mechanism if Kafka requires authentication (e.g., `PLAIN`, `SCRAM-SHA-256`)
+- `KAFKA_SASL_USERNAME` - Kafka username for authentication
+- `KAFKA_SASL_PASSWORD` - Kafka password for authentication
+- `KAFKA_DEFAULT_API_TIMEOUT_MS` - Kafka API operation timeout (default: `60000`)
+- `KAFKA_REQUEST_TIMEOUT_MS` - Kafka request timeout (default: `30000`)
+
+**Note**: The SPI synchronizes passwords to Kafka **immediately** when users change passwords in Keycloak. No webhook or cache required.
 
 #### Reconciliation
 
-- `RECONCILE_INTERVAL_SECONDS` - How often to sync all users (default: `120`)
+- `RECONCILE_SCHEDULER_ENABLED` - Enable/disable scheduled reconciliation (default: `false` - manual only)
+- `RECONCILE_INTERVAL_SECONDS` - How often to sync all users if enabled (default: `120`)
 - `RECONCILE_PAGE_SIZE` - Users per page for bulk sync (default: `500`)
+
+**Note**: With direct Kafka SPI, scheduled reconciliation is **disabled by default**. Manual reconciliation is available via REST API as a safety net.
 
 #### Retention
 
