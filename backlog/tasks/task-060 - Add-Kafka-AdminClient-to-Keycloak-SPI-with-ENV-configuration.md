@@ -5,7 +5,7 @@ status: In Progress
 assignee:
   - '@claude'
 created_date: '2025-11-09 11:17'
-updated_date: '2025-11-09 11:45'
+updated_date: '2025-11-09 11:46'
 labels:
   - spi
   - kafka
@@ -23,7 +23,7 @@ Add Kafka AdminClient dependency to the Keycloak SPI module and implement connec
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Kafka client dependency added to keycloak-password-sync-spi/pom.xml
+- [x] #1 Kafka client dependency added to keycloak-password-sync-spi/pom.xml
 - [ ] #2 KafkaAdminClientFactory class created that reads ENV variables
 - [ ] #3 AdminClient connection successfully established to Kafka broker
 - [ ] #4 Configuration supports PLAINTEXT and SSL protocols via ENV
