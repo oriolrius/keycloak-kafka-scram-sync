@@ -1,11 +1,11 @@
 ---
 id: task-065
 title: Remove sync-agent components not needed for direct SPI
-status: In Progress
+status: Done
 assignee:
   - '@claude'
 created_date: '2025-11-09 11:18'
-updated_date: '2025-11-09 13:08'
+updated_date: '2025-11-09 13:09'
 labels:
   - cleanup
   - sync-agent
@@ -26,7 +26,7 @@ In the feature branch, remove or disable sync-agent components that are obsolete
 - [x] #2 Password cache removed from ReconciliationService
 - [x] #3 Scheduled reconciliation kept as manual safety net only
 - [x] #4 Sync-agent compiles without webhook/cache code
-- [ ] #5 Docker compose still starts sync-agent successfully
+- [x] #5 Docker compose still starts sync-agent successfully
 <!-- AC:END -->
 
 ## Implementation Plan
