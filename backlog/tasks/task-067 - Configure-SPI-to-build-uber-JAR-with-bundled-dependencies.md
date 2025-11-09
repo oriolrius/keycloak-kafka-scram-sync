@@ -1,7 +1,7 @@
 ---
 id: task-067
 title: Configure SPI to build uber JAR with bundled dependencies
-status: In Progress
+status: Done
 assignee:
   - '@assistant'
 created_date: '2025-11-09 12:32'
