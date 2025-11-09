@@ -1,9 +1,11 @@
 ---
 id: task-060
 title: Add Kafka AdminClient to Keycloak SPI with ENV configuration
-status: To Do
-assignee: []
+status: In Progress
+assignee:
+  - '@claude'
 created_date: '2025-11-09 11:17'
+updated_date: '2025-11-09 11:45'
 labels:
   - spi
   - kafka
