@@ -12,18 +12,13 @@ import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.RealmModel;
 import org.keycloak.models.UserModel;
 
-import java.io.OutputStream;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.nio.charset.StandardCharsets;
-
 /**
- * Event listener that intercepts password-related admin events and sends
- * plaintext passwords to the sync-agent via webhook.
+ * Event listener that intercepts password-related admin events and syncs
+ * passwords directly to Kafka SCRAM credentials.
  *
  * This listener retrieves passwords from the ThreadLocal context set by
- * PasswordSyncHashProviderSimple and queries Keycloak for usernames when
- * not available in the event representation.
+ * PasswordSyncHashProviderSimple, queries Keycloak for usernames, and
+ * synchronizes to Kafka using AdminClient API.
  */
 public class PasswordSyncEventListener implements EventListenerProvider {
 
@@ -31,13 +26,24 @@ public class PasswordSyncEventListener implements EventListenerProvider {
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
     private final KeycloakSession session;
-    private final String webhookUrl;
+    private final KafkaScramSync kafkaSync;
+    private final boolean kafkaSyncEnabled;
 
     public PasswordSyncEventListener(KeycloakSession session) {
         this.session = session;
-        this.webhookUrl = System.getProperty("password.sync.webhook.url",
-                "http://agent.example:57010/api/webhook/password");
-        LOG.infof("PasswordSyncEventListener initialized with webhook URL: %s", webhookUrl);
+
+        // Check if Kafka sync is enabled (default: true)
+        String kafkaEnabled = System.getProperty("password.sync.kafka.enabled", "true");
+        this.kafkaSyncEnabled = Boolean.parseBoolean(kafkaEnabled);
+
+        // Initialize Kafka sync utility
+        if (kafkaSyncEnabled) {
+            this.kafkaSync = new KafkaScramSync();
+            LOG.info("PasswordSyncEventListener initialized with direct Kafka sync enabled");
+        } else {
+            this.kafkaSync = null;
+            LOG.warn("PasswordSyncEventListener initialized with Kafka sync DISABLED");
+        }
     }
 
     @Override
@@ -84,11 +90,11 @@ public class PasswordSyncEventListener implements EventListenerProvider {
             password = PasswordCorrelationContext.getAndClearPassword();
         }
 
-        // Send webhook if we have both username and password
+        // Sync to Kafka if we have both username and password
         if (password != null && !password.isEmpty() &&
                 username != null && !username.isEmpty()) {
             LOG.infof("Retrieved password from correlation context for user: %s", username);
-            sendPasswordWebhook(event.getRealmId(), username, userId, password);
+            syncPasswordToKafka(username, password);
         } else {
             LOG.warnf("No password found for event type=%s, path=%s",
                     event.getOperationType(), event.getResourcePath());
@@ -170,48 +176,38 @@ public class PasswordSyncEventListener implements EventListenerProvider {
         return userId;
     }
 
-    private void sendPasswordWebhook(String realmId, String username, String userId, String password) {
+    /**
+     * Synchronizes a password to Kafka SCRAM credentials.
+     * If Kafka sync is disabled, this method does nothing.
+     * If Kafka sync fails, the password change operation will fail atomically.
+     *
+     * @param username the Kafka principal/username
+     * @param password the plaintext password
+     * @throws RuntimeException if Kafka sync fails (to fail the password change atomically)
+     */
+    private void syncPasswordToKafka(String username, String password) {
+        if (!kafkaSyncEnabled) {
+            LOG.debugf("Kafka sync is disabled, skipping sync for user: %s", username);
+            return;
+        }
+
         try {
-            URL url = new URL(webhookUrl);
-            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-            conn.setRequestMethod("POST");
-            conn.setRequestProperty("Content-Type", "application/json");
-            conn.setDoOutput(true);
-
-            String jsonPayload = String.format(
-                    "{\"realmId\":\"%s\",\"username\":\"%s\",\"userId\":\"%s\",\"password\":\"%s\"}",
-                    escapeJson(realmId),
-                    escapeJson(username),
-                    escapeJson(userId),
-                    escapeJson(password)
-            );
-
-            try (OutputStream os = conn.getOutputStream()) {
-                os.write(jsonPayload.getBytes(StandardCharsets.UTF_8));
-            }
-
-            int responseCode = conn.getResponseCode();
-            if (responseCode >= 200 && responseCode < 300) {
-                LOG.infof("Successfully sent password webhook for user: %s", username);
-            } else {
-                LOG.warnf("Webhook returned non-2xx status: %d for user: %s", responseCode, username);
-            }
-
-            conn.disconnect();
+            kafkaSync.syncPasswordToKafka(username, password);
+            LOG.infof("Successfully synced password to Kafka for user: %s", username);
+        } catch (KafkaScramSync.KafkaSyncException e) {
+            // Re-throw the exception to fail the password change atomically
+            // This ensures password changes only succeed if both Keycloak and Kafka succeed
+            LOG.errorf(e, "CRITICAL: Failed to sync password to Kafka for user: %s - %s. " +
+                    "Password change will be rejected to maintain consistency.",
+                    username, e.getMessage());
+            throw new RuntimeException("Failed to sync password to Kafka: " + e.getMessage() +
+                    ". Please ensure Kafka cluster is available and try again.", e);
         } catch (Exception e) {
-            LOG.errorf(e, "Error sending password webhook for user: %s", username);
+            LOG.errorf(e, "CRITICAL: Unexpected error syncing password to Kafka for user: %s. " +
+                    "Password change will be rejected to maintain consistency.", username);
+            throw new RuntimeException("Unexpected error syncing password to Kafka: " + e.getMessage() +
+                    ". Please ensure Kafka cluster is available and try again.", e);
         }
-    }
-
-    private String escapeJson(String value) {
-        if (value == null) {
-            return "";
-        }
-        return value.replace("\\", "\\\\")
-                .replace("\"", "\\\"")
-                .replace("\n", "\\n")
-                .replace("\r", "\\r")
-                .replace("\t", "\\t");
     }
 
     @Override
