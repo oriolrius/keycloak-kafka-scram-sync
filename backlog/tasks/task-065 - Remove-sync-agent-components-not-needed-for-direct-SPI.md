@@ -28,3 +28,17 @@ In the feature branch, remove or disable sync-agent components that are obsolete
 - [ ] #4 Sync-agent compiles without webhook/cache code
 - [ ] #5 Docker compose still starts sync-agent successfully
 <!-- AC:END -->
+
+## Implementation Plan
+
+<!-- SECTION:PLAN:BEGIN -->
+1. Search for PasswordWebhookResource class
+2. Search for password cache in ReconciliationService
+3. Search for scheduled reconciliation triggers
+4. Remove/disable PasswordWebhookResource (AC #1)
+5. Remove password cache from ReconciliationService (AC #2)
+6. Convert scheduled reconciliation to manual-only (AC #3)
+7. Compile sync-agent to verify no errors (AC #4)
+8. Test docker compose startup (AC #5)
+9. Document all changes in implementation notes
+<!-- SECTION:PLAN:END -->
