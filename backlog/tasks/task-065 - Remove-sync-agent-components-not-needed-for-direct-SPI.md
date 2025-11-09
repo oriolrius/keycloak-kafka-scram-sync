@@ -1,9 +1,11 @@
 ---
 id: task-065
 title: Remove sync-agent components not needed for direct SPI
-status: To Do
-assignee: []
+status: In Progress
+assignee:
+  - '@claude'
 created_date: '2025-11-09 11:18'
+updated_date: '2025-11-09 13:06'
 labels:
   - cleanup
   - sync-agent
