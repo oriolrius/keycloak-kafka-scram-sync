@@ -5,7 +5,7 @@ status: Done
 assignee:
   - '@assistant'
 created_date: '2025-11-09 12:32'
-updated_date: '2025-11-09 12:38'
+updated_date: '2025-11-09 12:51'
 labels:
   - spi
   - build
@@ -27,7 +27,7 @@ The Keycloak Password Sync SPI currently builds a slim JAR without bundling its 
 - [x] #2 Uber JAR includes Kafka client dependencies and transitive dependencies
 - [x] #3 Keycloak starts successfully with the new SPI JAR loaded
 - [x] #4 SPI logs confirm it loaded correctly in Keycloak
-- [ ] #5 E2E tests from task-64 pass with the deployed SPI
+- [x] #5 E2E tests from task-64 pass with the deployed SPI
 <!-- AC:END -->
 
 ## Implementation Plan
@@ -87,4 +87,15 @@ Tests fail due to Kafka connectivity configuration (separate issue from task-063
 - The uber JAR is working correctly
 
 The ClassNotFoundException blocking issue from task-64 is **fully resolved**.
+
+**UPDATE: E2E Tests Passing!**
+
+After restoring ThreadLocal mechanism (PasswordCorrelationContext), all E2E tests from task-64 now pass. The uber JAR is working correctly with the direct SPI architecture.
+
+**Test Results:**
+- 2 passed, 1 skipped (Kafka downtime test intentionally skipped)
+- SCRAM authentication works immediately after password set
+- Direct SPI syncs to Kafka successfully
+
+The uber JAR with maven-shade-plugin successfully includes all Kafka dependencies and enables the direct SPI to work as designed.
 <!-- SECTION:NOTES:END -->
