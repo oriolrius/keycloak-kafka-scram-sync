@@ -1,9 +1,11 @@
 ---
 id: task-062
 title: Implement direct Kafka sync in PasswordHashProvider SPI
-status: To Do
-assignee: []
+status: In Progress
+assignee:
+  - '@claude'
 created_date: '2025-11-09 11:18'
+updated_date: '2025-11-09 12:05'
 labels:
   - spi
   - core-logic
