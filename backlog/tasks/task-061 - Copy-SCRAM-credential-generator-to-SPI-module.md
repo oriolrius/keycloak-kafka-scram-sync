@@ -5,7 +5,7 @@ status: In Progress
 assignee:
   - '@claude'
 created_date: '2025-11-09 11:17'
-updated_date: '2025-11-09 11:56'
+updated_date: '2025-11-09 11:58'
 labels:
   - spi
   - crypto
@@ -22,7 +22,7 @@ Copy the ScramCredentialGenerator class from sync-agent (src/main/java/com/miime
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 ScramCredentialGenerator class copied to keycloak-password-sync-spi module
+- [x] #1 ScramCredentialGenerator class copied to keycloak-password-sync-spi module
 - [ ] #2 Unit tests for SCRAM generation pass
 - [ ] #3 SCRAM credentials generate correctly with salt, iterations, and hashed password
 <!-- AC:END -->
