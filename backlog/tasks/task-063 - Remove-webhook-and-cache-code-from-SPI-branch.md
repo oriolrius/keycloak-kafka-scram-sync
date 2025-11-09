@@ -28,3 +28,15 @@ Remove all webhook-related code from the feature branch: remove HTTP POST to syn
 - [ ] #4 SPI only contains direct Kafka sync logic
 - [ ] #5 SPI compiles successfully without webhook dependencies
 <!-- AC:END -->
+
+## Implementation Plan
+
+<!-- SECTION:PLAN:BEGIN -->
+1. Examine current SPI implementation to identify all webhook-related code
+2. Remove webhook HTTP client code from PasswordUpdateEventListener
+3. Remove ThreadLocal password storage mechanism
+4. Remove PasswordWebhookResource references and dependencies
+5. Clean up any webhook-related imports and dependencies
+6. Verify SPI compiles successfully
+7. Test that direct Kafka sync still works correctly
+<!-- SECTION:PLAN:END -->
