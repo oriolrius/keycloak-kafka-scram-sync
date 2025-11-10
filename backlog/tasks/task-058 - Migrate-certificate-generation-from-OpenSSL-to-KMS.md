@@ -1,11 +1,11 @@
 ---
 id: task-058
 title: Migrate certificate generation from OpenSSL to KMS
-status: In Progress
+status: Done
 assignee:
   - '@claude'
 created_date: '2025-11-07 14:32'
-updated_date: '2025-11-10 16:20'
+updated_date: '2025-11-10 16:21'
 labels: []
 dependencies: []
 ---
@@ -51,3 +51,20 @@ The new approach should:
 9. Replace old script if found
 10. Update documentation
 <!-- SECTION:PLAN:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+- Created `tests/infrastructure/certs/regenerate-certs.sh` script that generates all certificates using Cosmian KMS
+- Script uses `ckms` CLI with `--certificate-extensions` flag to apply X.509 extensions from .ext files
+- Updated `ca.ext` to remove unsupported `cRLSign` and `authorityKeyIdentifier` for self-signed root CA
+- Modified `tests/infrastructure/Makefile` to use the new script via environment variables
+- All certificates are generated with proper extensions:
+  - CA: basicConstraints=CA:TRUE, keyUsage=critical,keyCertSign,digitalSignature
+  - Server certs: extendedKeyUsage=serverAuth,clientAuth, proper SANs
+- Certificates successfully validated with Kafka and Keycloak services
+- KMS database files are stored in docker volume mapped to data/kms
+- Created comprehensive README.md documentation in certs directory
+- Script includes verification steps to check certificate validity and extensions
+- All acceptance criteria met: CA generation, server cert generation with extensions, proper placement, KMS storage, service validation
+<!-- SECTION:NOTES:END -->
