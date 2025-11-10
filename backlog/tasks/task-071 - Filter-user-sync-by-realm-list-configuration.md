@@ -1,10 +1,11 @@
 ---
 id: task-071
 title: Filter user sync by realm list configuration
-status: To Do
-assignee: []
+status: In Progress
+assignee:
+  - '@claude'
 created_date: '2025-11-10 17:01'
-updated_date: '2025-11-10 17:33'
+updated_date: '2025-11-10 17:34'
 labels: []
 dependencies: []
 ---
