@@ -2,6 +2,7 @@
 data/kafka/__consumer_offsets-*/
 data/kafka/test-topic-*/
 data/kafka/__cluster_metadata-0/*.checkpoint
+data/kafka/*.checkpoint
 data/keycloak/*.db
 data/keycloak/*.db-*
 data/kms/*
