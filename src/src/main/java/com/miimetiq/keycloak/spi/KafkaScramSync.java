@@ -30,29 +30,40 @@ public class KafkaScramSync {
     private static final Logger LOG = Logger.getLogger(KafkaScramSync.class);
     private static final int DEFAULT_SCRAM_ITERATIONS = 4096;
     private static final int KAFKA_TIMEOUT_SECONDS = 30;
+    private static final String ENV_SCRAM_MECHANISM = "KAFKA_SCRAM_MECHANISM";
 
     private final ScramCredentialGenerator scramGenerator;
+    private final String scramMechanism;
 
     public KafkaScramSync() {
         this.scramGenerator = new ScramCredentialGenerator();
+        // Read SCRAM mechanism from environment variable (defaults to "256")
+        String envMechanism = System.getenv(ENV_SCRAM_MECHANISM);
+        this.scramMechanism = (envMechanism == null || envMechanism.isEmpty()) ? "256" : envMechanism;
+        LOG.infof("KafkaScramSync initialized with SCRAM-SHA-%s mechanism", this.scramMechanism);
     }
 
     /**
      * Synchronizes a password to Kafka by generating SCRAM credentials and upserting them.
-     * Creates credentials for both SCRAM-SHA-256 and SCRAM-SHA-512 mechanisms.
+     * Creates credentials for the configured SCRAM mechanism (SHA-256 or SHA-512).
      *
      * @param username the Kafka principal/username
      * @param password the plaintext password
      * @throws KafkaSyncException if the sync fails
      */
     public void syncPasswordToKafka(String username, String password) {
-        LOG.infof("Syncing password to Kafka for user: %s", username);
+        LOG.infof("Syncing password to Kafka for user: %s with SCRAM-SHA-%s", username, scramMechanism);
 
         try {
-            // Step 1: Generate SCRAM credentials for both SHA-256 and SHA-512
-            ScramCredential scram256 = scramGenerator.generateScramSha256(password, DEFAULT_SCRAM_ITERATIONS);
-            ScramCredential scram512 = scramGenerator.generateScramSha512(password, DEFAULT_SCRAM_ITERATIONS);
-            LOG.debugf("Generated SCRAM-SHA-256 and SCRAM-SHA-512 credentials for user: %s", username);
+            // Step 1: Generate SCRAM credentials for the configured mechanism
+            ScramCredential scramCredential;
+            if ("512".equals(scramMechanism)) {
+                scramCredential = scramGenerator.generateScramSha512(password, DEFAULT_SCRAM_ITERATIONS);
+                LOG.debugf("Generated SCRAM-SHA-512 credentials for user: %s", username);
+            } else {
+                scramCredential = scramGenerator.generateScramSha256(password, DEFAULT_SCRAM_ITERATIONS);
+                LOG.debugf("Generated SCRAM-SHA-256 credentials for user: %s", username);
+            }
 
             // Step 2: Get Kafka AdminClient
             AdminClient adminClient;
@@ -62,64 +73,35 @@ public class KafkaScramSync {
                 throw new KafkaSyncException("Failed to connect to Kafka: " + e.getMessage(), e);
             }
 
-            // Step 3: Upsert SCRAM-SHA-256 credentials
-            org.apache.kafka.clients.admin.ScramMechanism kafkaMechanism256 = convertToKafkaScramMechanism(scram256.getMechanism());
-            ScramCredentialInfo credentialInfo256 = new ScramCredentialInfo(
-                    kafkaMechanism256,
-                    scram256.getIterations()
+            // Step 3: Convert to Kafka format and create upsertion
+            org.apache.kafka.clients.admin.ScramMechanism kafkaMechanism = convertToKafkaScramMechanism(scramCredential.getMechanism());
+            ScramCredentialInfo credentialInfo = new ScramCredentialInfo(
+                    kafkaMechanism,
+                    scramCredential.getIterations()
             );
-            UserScramCredentialUpsertion upsertion256 = new UserScramCredentialUpsertion(
+            UserScramCredentialUpsertion upsertion = new UserScramCredentialUpsertion(
                     username,
-                    credentialInfo256,
+                    credentialInfo,
                     password
             );
 
-            AlterUserScramCredentialsResult result256 = adminClient.alterUserScramCredentials(
-                    Collections.singletonList(upsertion256)
+            // Step 4: Execute upsert to Kafka
+            AlterUserScramCredentialsResult result = adminClient.alterUserScramCredentials(
+                    Collections.singletonList(upsertion)
             );
 
-            // Step 4: Wait for SCRAM-SHA-256 to complete
+            // Step 5: Wait for completion
             try {
-                result256.all().get(KAFKA_TIMEOUT_SECONDS, TimeUnit.SECONDS);
-                LOG.debugf("Successfully synced SCRAM-SHA-256 for user: %s", username);
+                result.all().get(KAFKA_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+                LOG.infof("Successfully synced password to Kafka for user: %s (SCRAM-SHA-%s)", username, scramMechanism);
             } catch (ExecutionException e) {
                 Throwable cause = e.getCause();
-                throw new KafkaSyncException("Kafka rejected SCRAM-SHA-256 credential update: " + cause.getMessage(), cause);
+                throw new KafkaSyncException("Kafka rejected SCRAM-SHA-" + scramMechanism + " credential update: " + cause.getMessage(), cause);
             } catch (TimeoutException e) {
-                throw new KafkaSyncException("SCRAM-SHA-256 sync timed out after " + KAFKA_TIMEOUT_SECONDS + " seconds", e);
+                throw new KafkaSyncException("SCRAM-SHA-" + scramMechanism + " sync timed out after " + KAFKA_TIMEOUT_SECONDS + " seconds", e);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
-                throw new KafkaSyncException("SCRAM-SHA-256 sync was interrupted", e);
-            }
-
-            // Step 5: Upsert SCRAM-SHA-512 credentials (separate request)
-            org.apache.kafka.clients.admin.ScramMechanism kafkaMechanism512 = convertToKafkaScramMechanism(scram512.getMechanism());
-            ScramCredentialInfo credentialInfo512 = new ScramCredentialInfo(
-                    kafkaMechanism512,
-                    scram512.getIterations()
-            );
-            UserScramCredentialUpsertion upsertion512 = new UserScramCredentialUpsertion(
-                    username,
-                    credentialInfo512,
-                    password
-            );
-
-            AlterUserScramCredentialsResult result512 = adminClient.alterUserScramCredentials(
-                    Collections.singletonList(upsertion512)
-            );
-
-            // Step 6: Wait for SCRAM-SHA-512 to complete
-            try {
-                result512.all().get(KAFKA_TIMEOUT_SECONDS, TimeUnit.SECONDS);
-                LOG.infof("Successfully synced password to Kafka for user: %s (SCRAM-SHA-256 and SCRAM-SHA-512)", username);
-            } catch (ExecutionException e) {
-                Throwable cause = e.getCause();
-                throw new KafkaSyncException("Kafka rejected SCRAM-SHA-512 credential update: " + cause.getMessage(), cause);
-            } catch (TimeoutException e) {
-                throw new KafkaSyncException("SCRAM-SHA-512 sync timed out after " + KAFKA_TIMEOUT_SECONDS + " seconds", e);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                throw new KafkaSyncException("SCRAM-SHA-512 sync was interrupted", e);
+                throw new KafkaSyncException("SCRAM-SHA-" + scramMechanism + " sync was interrupted", e);
             }
 
         } catch (ScramCredentialGenerator.ScramGenerationException e) {

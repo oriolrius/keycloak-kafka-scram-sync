@@ -9,12 +9,18 @@
  * 4. Kafka consumer authenticates with SCRAM-SHA-512 and receives message
  */
 
-import { Kafka } from 'kafkajs';
+import { Kafka, Partitioners, logLevel } from 'kafkajs';
 import fs from 'fs';
 import https from 'https';
 import fetch from 'node-fetch';
 
+// Silence KafkaJS partitioner warning
+process.env.KAFKAJS_NO_PARTITIONER_WARNING = '1';
+
 // Configuration
+const SCRAM_MECHANISM = process.env.TEST_SCRAM_MECHANISM || '256';
+const SCRAM_NAME = `scram-sha-${SCRAM_MECHANISM}`;
+
 const CONFIG = {
   keycloak: {
     url: process.env.KEYCLOAK_URL || 'https://localhost:57003',
@@ -24,6 +30,7 @@ const CONFIG = {
   },
   kafka: {
     brokers: (process.env.KAFKA_BROKERS || 'localhost:57005').split(','),
+    mechanism: SCRAM_NAME,
     ssl: {
       ca: [fs.readFileSync('../testing/certs/ca-root.pem', 'utf-8')],
       rejectUnauthorized: false // For testing with self-signed certs
@@ -163,34 +170,149 @@ async function setUserPassword(token, userId, password) {
 }
 
 /**
- * Test Kafka producer with SCRAM-SHA-256
+ * Wait for Kafka cluster to be ready
+ */
+async function waitKafkaReady(kafka, timeoutMs = 15000) {
+  console.log(`⏳ Waiting for Kafka cluster to be ready...`);
+  const admin = kafka.admin();
+  await admin.connect();
+
+  const start = Date.now();
+  while (Date.now() - start < timeoutMs) {
+    try {
+      const info = await admin.describeCluster();
+      if (info.brokers?.length) {
+        console.log(`✅ Kafka cluster ready (${info.brokers.length} broker(s))`);
+        await admin.disconnect();
+        return;
+      }
+    } catch (e) {
+      // Cluster not ready yet
+    }
+    await new Promise(r => setTimeout(r, 300));
+  }
+
+  await admin.disconnect();
+  throw new Error('Kafka cluster not ready within timeout');
+}
+
+/**
+ * Ensure topic exists with leader elected
+ */
+async function ensureTopicWithLeaders(kafka, topic, timeoutMs = 10000) {
+  console.log(`⏳ Creating topic and waiting for leader election: ${topic}...`);
+  const admin = kafka.admin();
+  await admin.connect();
+
+  try {
+    // Create topic with waitForLeaders
+    await admin.createTopics({
+      waitForLeaders: true,
+      topics: [{
+        topic,
+        numPartitions: 1,
+        replicationFactor: 1
+      }],
+    });
+
+    // Extra safety: poll metadata until leader is set
+    const start = Date.now();
+    while (Date.now() - start < timeoutMs) {
+      const md = await admin.fetchTopicMetadata({ topics: [topic] });
+      const p0 = md.topics[0]?.partitions?.[0];
+      if (p0 && typeof p0.leader === 'number' && p0.leader >= 0) {
+        console.log(`✅ Topic ready with leader: ${topic}`);
+        await admin.disconnect();
+        return;
+      }
+      await new Promise(r => setTimeout(r, 200));
+    }
+
+    throw new Error(`Topic ${topic} not ready (no leader) within timeout`);
+  } catch (e) {
+    // Topic might already exist, verify it has a leader
+    if (e.message.includes('already exists')) {
+      const md = await admin.fetchTopicMetadata({ topics: [topic] });
+      const p0 = md.topics[0]?.partitions?.[0];
+      if (p0 && typeof p0.leader === 'number' && p0.leader >= 0) {
+        console.log(`✅ Topic already exists with leader: ${topic}`);
+        await admin.disconnect();
+        return;
+      }
+    }
+    await admin.disconnect();
+    throw e;
+  }
+}
+
+/**
+ * Create a custom log creator that waits for consumer group to be ready
+ * Returns both the logCreator and a promise that resolves when group is ready
+ */
+function createConsumerGroupReadyWatcher() {
+  let resolveGroupReady;
+  const groupReadyPromise = new Promise((resolve) => {
+    resolveGroupReady = resolve;
+  });
+
+  const logCreator = () => {
+    return ({ level, log }) => {
+      const { message } = log;
+
+      // Check for consumer group ready message
+      if (message && message.includes('Consumer has joined the group')) {
+        resolveGroupReady();
+      }
+
+      // Output all logs for visibility
+      const levelLabels = ['NOTHING', 'ERROR', 'WARN', 'INFO', 'DEBUG'];
+      const levelLabel = levelLabels[level] || 'UNKNOWN';
+      console.log(JSON.stringify({ level: levelLabel, ...log }));
+    };
+  };
+
+  return { logCreator, groupReadyPromise };
+}
+
+/**
+ * Test Kafka producer with configured SCRAM mechanism
  */
 async function testKafkaProducer(username, password, topic) {
-  console.log(`\n📤 Testing Kafka producer (SCRAM-SHA-256)...`);
+  console.log(`\n📤 Testing Kafka producer (${CONFIG.kafka.mechanism.toUpperCase()})...`);
 
   const kafka = new Kafka({
     clientId: 'e2e-producer',
     brokers: CONFIG.kafka.brokers,
     ssl: CONFIG.kafka.ssl,
     sasl: {
-      mechanism: 'scram-sha-256',
+      mechanism: CONFIG.kafka.mechanism,
       username,
       password
     },
     connectionTimeout: 10000,
-    requestTimeout: 10000
+    requestTimeout: 30000,
+    retry: { initialRetryTime: 300, retries: 8 }
   });
 
-  const producer = kafka.producer();
+  // Wait for Kafka cluster to be ready
+  await waitKafkaReady(kafka);
+
+  // Ensure topic exists with leader elected
+  await ensureTopicWithLeaders(kafka, topic);
+
+  const producer = kafka.producer({
+    allowAutoTopicCreation: false,
+    createPartitioner: Partitioners.LegacyPartitioner
+  });
 
   try {
     await producer.connect();
-    console.log(`✅ Producer connected with SCRAM-SHA-256`);
+    console.log(`✅ Producer connected with ${CONFIG.kafka.mechanism.toUpperCase()}`);
 
     const testMessage = {
       timestamp: new Date().toISOString(),
       message: 'Hello from E2E test!',
-      mechanism: 'SCRAM-SHA-256'
+      mechanism: CONFIG.kafka.mechanism.toUpperCase()
     };
 
     await producer.send({
@@ -211,34 +333,50 @@ async function testKafkaProducer(username, password, topic) {
 }
 
 /**
- * Test Kafka consumer with SCRAM-SHA-512
+ * Test Kafka consumer with configured SCRAM mechanism
  */
 async function testKafkaConsumer(username, password, topic, expectedMessage) {
-  console.log(`\n📥 Testing Kafka consumer (SCRAM-SHA-512)...`);
+  console.log(`\n📥 Testing Kafka consumer (${CONFIG.kafka.mechanism.toUpperCase()})...`);
+
+  // Create log watcher to detect when consumer group is ready
+  const { logCreator, groupReadyPromise } = createConsumerGroupReadyWatcher();
 
   const kafka = new Kafka({
     clientId: 'e2e-consumer',
     brokers: CONFIG.kafka.brokers,
     ssl: CONFIG.kafka.ssl,
     sasl: {
-      mechanism: 'scram-sha-512',
+      mechanism: CONFIG.kafka.mechanism,
       username,
       password
     },
     connectionTimeout: 10000,
-    requestTimeout: 10000
+    requestTimeout: 30000,
+    retry: { initialRetryTime: 300, retries: 8 },
+    logCreator  // Use custom log creator to watch for consumer group ready
   });
 
-  const consumer = kafka.consumer({ groupId: `e2e-test-${Date.now()}` });
+  // Wait for Kafka cluster to be ready before creating consumer
+  await waitKafkaReady(kafka);
+
+  const consumer = kafka.consumer({
+    groupId: `e2e-test-${Date.now()}`,
+    retry: { initialRetryTime: 300, retries: 8 },
+    sessionTimeout: 15000,
+    rebalanceTimeout: 30000,
+    requestTimeout: 30000
+  });
 
   try {
     await consumer.connect();
-    console.log(`✅ Consumer connected with SCRAM-SHA-512`);
+    console.log(`✅ Consumer connected with ${CONFIG.kafka.mechanism.toUpperCase()}`);
 
     await consumer.subscribe({ topic, fromBeginning: true });
     console.log(`✅ Subscribed to topic: ${topic}`);
 
-    return new Promise((resolve, reject) => {
+    // Start the consumer (triggers consumer group initialization)
+    console.log(`⏳ Waiting for consumer group to initialize...`);
+    const messagePromise = new Promise((resolve, reject) => {
       const timeout = setTimeout(() => {
         reject(new Error('Timeout: No message received within 15 seconds'));
       }, 15000);
@@ -261,6 +399,13 @@ async function testKafkaConsumer(username, password, topic, expectedMessage) {
         }
       });
     });
+
+    // Wait for consumer group to be ready (logs will show initialization)
+    await groupReadyPromise;
+    console.log(`✅ Consumer group ready`);
+
+    // Wait for message
+    return await messagePromise;
   } finally {
     await consumer.disconnect();
   }
@@ -271,11 +416,13 @@ async function testKafkaConsumer(username, password, topic, expectedMessage) {
  */
 async function runE2ETest() {
   console.log('═══════════════════════════════════════════════════════');
-  console.log('   Keycloak → Kafka SCRAM Sync E2E Test');
+  console.log(`   Keycloak → Kafka SCRAM Sync E2E Test`);
+  console.log(`   Mechanism: ${CONFIG.kafka.mechanism.toUpperCase()}`);
   console.log('═══════════════════════════════════════════════════════');
   console.log(`\nConfiguration:`);
   console.log(`  Keycloak: ${CONFIG.keycloak.url}`);
   console.log(`  Kafka: ${CONFIG.kafka.brokers.join(', ')}`);
+  console.log(`  SCRAM Mechanism: ${CONFIG.kafka.mechanism.toUpperCase()}`);
   console.log(`  Test User: ${CONFIG.test.username}`);
   console.log(`  Test Topic: ${CONFIG.test.topic}`);
 
@@ -296,9 +443,9 @@ async function runE2ETest() {
     const userId = await getUserId(token, CONFIG.test.username);
     await setUserPassword(token, userId, CONFIG.test.password);
 
-    // Step 3: Test Kafka producer with SCRAM-SHA-256
+    // Step 3: Test Kafka producer
     console.log(`\n${'='.repeat(55)}`);
-    console.log('STEP 3: Publish Message (SCRAM-SHA-256)');
+    console.log(`STEP 3: Publish Message (${CONFIG.kafka.mechanism.toUpperCase()})`);
     console.log('='.repeat(55));
     const publishedMessage = await testKafkaProducer(
       CONFIG.test.username,
@@ -306,9 +453,13 @@ async function runE2ETest() {
       CONFIG.test.topic
     );
 
-    // Step 4: Test Kafka consumer with SCRAM-SHA-512
+    // Wait for producer connections to fully disconnect
+    console.log(`\n⏳ Waiting for connection pool to settle...`);
+    await new Promise(r => setTimeout(r, 2000));
+
+    // Step 4: Test Kafka consumer
     console.log(`\n${'='.repeat(55)}`);
-    console.log('STEP 4: Consume Message (SCRAM-SHA-512)');
+    console.log(`STEP 4: Consume Message (${CONFIG.kafka.mechanism.toUpperCase()})`);
     console.log('='.repeat(55));
     const receivedMessage = await testKafkaConsumer(
       CONFIG.test.username,
@@ -323,9 +474,9 @@ async function runE2ETest() {
     console.log('═'.repeat(55));
     console.log(`\n✅ All steps completed successfully:`);
     console.log(`   1. User created in Keycloak`);
-    console.log(`   2. Password synced to Kafka SCRAM (both SHA-256 & SHA-512)`);
-    console.log(`   3. Producer authenticated with SCRAM-SHA-256`);
-    console.log(`   4. Consumer authenticated with SCRAM-SHA-512`);
+    console.log(`   2. Password synced to Kafka SCRAM (${CONFIG.kafka.mechanism.toUpperCase()})`);
+    console.log(`   3. Producer authenticated with ${CONFIG.kafka.mechanism.toUpperCase()}`);
+    console.log(`   4. Consumer authenticated with ${CONFIG.kafka.mechanism.toUpperCase()}`);
     console.log(`   5. Message published and received`);
     console.log('');
 

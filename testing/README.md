@@ -86,8 +86,8 @@ make start KMS_HOSTNAME=kms.prod.local CERT_PASSWORD=MySecurePass
 
 **Available variables:**
 - `DOMAIN` - Base domain (default: `example`)
-- `KMS_HOSTNAME`, `KEYCLOAK_HOSTNAME`, `KAFKA_HOSTNAME`, `AGENT_HOSTNAME`
-- `KMS_URL`, `KEYCLOAK_URL`, `KAFKA_PLAINTEXT`, `KAFKA_SSL`
+- `KMS_HOSTNAME`, `KEYCLOAK_HOSTNAME`, `KAFKA_HOSTNAME`
+- `KMS_URL`, `KEYCLOAK_URL`, `KAFKA_SSL`
 - `NETWORK_NAME` - Docker network (default: `keycloak-kafka-backbone`)
 - `CERT_PASSWORD`, `CERT_ORG`, `CERT_COUNTRY`, `CERT_DIR`
 
@@ -164,7 +164,7 @@ make config       # Show current configuration
 Add to `/etc/hosts`:
 
 ```
-127.0.0.1  kms.example keycloak.example kafka.example agent.example
+127.0.0.1  kms.example keycloak.example kafka.example
 ```
 
 ## SSL/TLS Setup
@@ -180,7 +180,6 @@ Certificate files in `./certs/`:
 - `ca-root.pem` - Root CA
 - `keycloak_server.pem/p12` - Keycloak certificate
 - `kafka_broker.pem/p12` - Kafka certificate
-- `sync_agent.pem/p12` - Agent certificate (future use)
 - `*.jks` - Java keystores for Kafka
 
 ## Data Persistence

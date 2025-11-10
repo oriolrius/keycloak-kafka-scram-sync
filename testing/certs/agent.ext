@@ -1,5 +1,0 @@
-[ v3_ca ]
-basicConstraints=CA:FALSE
-keyUsage=digitalSignature,keyEncipherment
-extendedKeyUsage=serverAuth,clientAuth
-subjectAltName=DNS:agent.example,DNS:sync-agent,DNS:localhost,IP:127.0.0.1
