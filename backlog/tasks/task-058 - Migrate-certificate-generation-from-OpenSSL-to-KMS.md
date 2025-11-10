@@ -5,7 +5,7 @@ status: In Progress
 assignee:
   - '@claude'
 created_date: '2025-11-07 14:32'
-updated_date: '2025-11-10 16:14'
+updated_date: '2025-11-10 16:16'
 labels: []
 dependencies: []
 ---
@@ -36,3 +36,18 @@ The new approach should:
 - [ ] #9 Testing validates that KMS-generated certificates work with Kafka and Keycloak
 - [ ] #10 Old OpenSSL-based regenerate-certs.sh is replaced or removed
 <!-- AC:END -->
+
+## Implementation Plan
+
+<!-- SECTION:PLAN:BEGIN -->
+1. Analyze current certificate generation in Makefile (already uses ckms)
+2. Check if there are any OpenSSL-based scripts to migrate from
+3. Understand .ext file format and required extensions (SANs, keyUsage, etc.)
+4. Research ckms CLI options for custom extensions (SANs, basicConstraints, keyUsage)
+5. Create standalone certificate generation script using ckms
+6. Parse .ext files and apply extensions via ckms or hybrid approach
+7. Test generated certificates have correct extensions
+8. Verify certificates work with Kafka and Keycloak
+9. Replace old script if found
+10. Update documentation
+<!-- SECTION:PLAN:END -->
