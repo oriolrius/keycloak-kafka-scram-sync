@@ -55,7 +55,22 @@ jobs:
         with:
           files: |
             src/target/keycloak-password-sync-spi.jar
-          generate_release_notes: true
+          body: |
+            ## Keycloak Password Sync SPI
+
+            Download the `keycloak-password-sync-spi.jar` and deploy it to your Keycloak instance.
+
+            ### Quick Start with Docker Compose
+            ```bash
+            # Download the JAR
+            curl -L -O https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/keycloak-password-sync-spi.jar
+
+            # Mount it in your docker-compose.yml
+            volumes:
+              - ./keycloak-password-sync-spi.jar:/opt/keycloak/providers/keycloak-password-sync-spi.jar:ro
+            ```
+
+            See the [README](https://github.com/${{ github.repository }}/blob/main/README.md) for full documentation.
           draft: false
           prerelease: false
         env:
