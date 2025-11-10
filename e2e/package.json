@@ -1,0 +1,17 @@
+{
+  "name": "keycloak-kafka-scram-e2e",
+  "version": "1.0.0",
+  "description": "E2E tests for Keycloak to Kafka SCRAM sync",
+  "type": "module",
+  "scripts": {
+    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
+    "test:e2e": "node scram-sync-e2e.test.js"
+  },
+  "dependencies": {
+    "kafkajs": "^2.2.4",
+    "node-fetch": "^3.3.2"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0"
+  }
+}

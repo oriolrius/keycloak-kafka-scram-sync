@@ -8,6 +8,7 @@ release.properties
 
 # Keycloak SPI build artifacts
 keycloak-password-sync-spi/target/
+src/dependency-reduced-pom.xml
 
 # Certificate backups
 testing/certs/backup-*/
@@ -67,15 +68,7 @@ frontend/node_modules/
 frontend/dist/
 frontend/.vite/
 
-# Playwright Tests
-test-results/
-playwright-report/
-
-# Root level node_modules and lockfile (if present)
-/node_modules/
-/package-lock.json
-
-# Playwright MCP
-.playwright-mcp/
+# E2E tests
+e2e/node_modules/
 
 scram-test/data/
