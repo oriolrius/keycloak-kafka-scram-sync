@@ -5,7 +5,7 @@ status: In Progress
 assignee:
   - '@claude'
 created_date: '2025-11-07 14:32'
-updated_date: '2025-11-10 16:18'
+updated_date: '2025-11-10 16:20'
 labels: []
 dependencies: []
 ---
@@ -27,14 +27,14 @@ The new approach should:
 <!-- AC:BEGIN -->
 - [x] #1 New script generates CA certificate using KMS instead of OpenSSL
 - [x] #2 New script generates server certificates using KMS with proper extensions
-- [ ] #3 New script generates client certificates using KMS with proper extensions
-- [ ] #4 KMS database files are stored in testing/data/kms directory
+- [x] #3 New script generates client certificates using KMS with proper extensions
+- [x] #4 KMS database files are stored in testing/data/kms directory
 - [x] #5 Generated certificates are placed in testing/certs directory
 - [x] #6 Certificate extensions (.ext files) are properly applied during generation
 - [x] #7 All generated certificates have the same structure and properties as OpenSSL-generated ones
 - [x] #8 CA certificate is properly configured and can sign other certificates
-- [ ] #9 Testing validates that KMS-generated certificates work with Kafka and Keycloak
-- [ ] #10 Old OpenSSL-based regenerate-certs.sh is replaced or removed
+- [x] #9 Testing validates that KMS-generated certificates work with Kafka and Keycloak
+- [x] #10 Old OpenSSL-based regenerate-certs.sh is replaced or removed
 <!-- AC:END -->
 
 ## Implementation Plan
