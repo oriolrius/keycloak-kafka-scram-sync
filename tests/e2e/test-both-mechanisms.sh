@@ -17,9 +17,23 @@ echo -e "${BLUE}═════════════════════�
 echo -e "${BLUE}   Keycloak → Kafka SCRAM E2E Test (Both Mechanisms)${NC}"
 echo -e "${BLUE}═══════════════════════════════════════════════════════${NC}"
 
-# Step 0: Build the SPI
+# Step 0a: Check and install Node.js dependencies
 echo -e "\n${YELLOW}═══════════════════════════════════════════════════════${NC}"
-echo -e "${YELLOW}STEP 0: Building Keycloak SPI${NC}"
+echo -e "${YELLOW}STEP 0a: Checking Node.js dependencies${NC}"
+echo -e "${YELLOW}═══════════════════════════════════════════════════════${NC}"
+cd "$SCRIPT_DIR"
+
+if [ ! -d "node_modules" ] || [ ! -f "node_modules/.package-lock.json" ]; then
+    echo -e "${YELLOW}📦 Installing npm dependencies...${NC}"
+    npm install --silent
+    echo -e "${GREEN}✅ Dependencies installed${NC}"
+else
+    echo -e "${GREEN}✅ Dependencies already installed${NC}"
+fi
+
+# Step 0b: Build the SPI
+echo -e "\n${YELLOW}═══════════════════════════════════════════════════════${NC}"
+echo -e "${YELLOW}STEP 0b: Building Keycloak SPI${NC}"
 echo -e "${YELLOW}═══════════════════════════════════════════════════════${NC}"
 cd "$ROOT_DIR/src"
 mvn clean package -DskipTests -q
@@ -33,6 +47,10 @@ cleanup_services() {
 
     echo -e "${YELLOW}🧹 Removing Kafka and Keycloak data directories...${NC}"
     sudo rm -rf data/kafka/* data/keycloak/*
+
+    # Ensure directories exist with correct ownership for container user (uid 1000)
+    mkdir -p data/kafka data/keycloak data/kms
+    sudo chown -R $USER:$USER data/
 
     echo -e "${GREEN}✅ Cleanup complete${NC}"
 }

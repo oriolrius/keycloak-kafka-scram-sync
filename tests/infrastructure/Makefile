@@ -103,79 +103,8 @@ kms-only:
 
 # Generate certificates
 certs:
-	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-	@echo "Certificate Generation"
-	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-	@echo ""
-	@# Check prerequisites
-	@command -v ckms >/dev/null 2>&1 || (echo "❌ ERROR: ckms CLI not found! Try: export PATH=\"\$$HOME/.local/bin:\$$PATH\""; exit 1)
-	@command -v keytool >/dev/null 2>&1 || (echo "❌ ERROR: keytool not found! Install Java JRE/JDK"; exit 1)
-	@command -v openssl >/dev/null 2>&1 || (echo "❌ ERROR: openssl not found!"; exit 1)
-	@# Check KMS is running
-	@curl -sf $(KMS_URL)/version >/dev/null || (echo "❌ ERROR: KMS not running! Run: make kms-only"; exit 1)
-	@echo "✓ Prerequisites OK"
-	@echo ""
-	@# Configure ckms and create certificates
-	@mkdir -p $(CERT_DIR)
-	@mkdir -p $(CERT_DIR)/.credentials
-	@echo "$(CERT_PASSWORD)" > $(CERT_DIR)/.credentials/keystore_password
-	@echo "$(CERT_PASSWORD)" > $(CERT_DIR)/.credentials/truststore_password
-	@echo "$(CERT_PASSWORD)" > $(CERT_DIR)/.credentials/sslkey_password
-	@echo "Step 1/3: Creating Root CA..." && \
-	(ckms --kms-url $(KMS_URL) kms certificates revoke --certificate-id ca-root 2>/dev/null || true) && \
-	(ckms --kms-url $(KMS_URL) kms certificates destroy --certificate-id ca-root 2>/dev/null || true) && \
-	ckms --kms-url $(KMS_URL) kms certificates certify \
-		--certificate-id ca-root \
-		--generate-key-pair \
-		--subject-name "CN=Testing Root CA,O=$(CERT_ORG),C=$(CERT_COUNTRY)" \
-		--algorithm rsa4096 \
-		--days 3650 \
-		--tag testing-env && \
-	ckms --kms-url $(KMS_URL) kms certificates export --certificate-id ca-root --format pem $(CERT_DIR)/ca-root.pem && \
-	echo "✓ Root CA created" && \
-	echo "" && \
-	echo "Step 2/3: Creating Keycloak certificate..." && \
-	(ckms --kms-url $(KMS_URL) kms certificates revoke --certificate-id keycloak_server 2>/dev/null || true) && \
-	(ckms --kms-url $(KMS_URL) kms certificates destroy --certificate-id keycloak_server 2>/dev/null || true) && \
-	ckms --kms-url $(KMS_URL) kms certificates certify \
-		--certificate-id keycloak_server \
-		--issuer-certificate-id ca-root \
-		--generate-key-pair \
-		--subject-name "CN=$(KEYCLOAK_HOSTNAME),O=$(CERT_ORG),C=$(CERT_COUNTRY)" \
-		--algorithm rsa2048 \
-		--days 365 \
-		--tag testing-env && \
-	ckms --kms-url $(KMS_URL) kms certificates export --certificate-id keycloak_server --format pkcs12 --pkcs12-password $(CERT_PASSWORD) $(CERT_DIR)/keycloak_server.p12 && \
-	ckms --kms-url $(KMS_URL) kms certificates export --certificate-id keycloak_server --format pem $(CERT_DIR)/keycloak_server.pem && \
-	openssl pkcs12 -in $(CERT_DIR)/keycloak_server.p12 -passin pass:$(CERT_PASSWORD) -nocerts -nodes -out $(CERT_DIR)/keycloak.key && \
-	openssl pkcs12 -in $(CERT_DIR)/keycloak_server.p12 -passin pass:$(CERT_PASSWORD) -nokeys -clcerts -out $(CERT_DIR)/keycloak.crt && \
-	echo "✓ Keycloak certificate created" && \
-	echo "" && \
-	echo "Step 3/3: Creating Kafka certificate..." && \
-	(ckms --kms-url $(KMS_URL) kms certificates revoke --certificate-id kafka_broker 2>/dev/null || true) && \
-	(ckms --kms-url $(KMS_URL) kms certificates destroy --certificate-id kafka_broker 2>/dev/null || true) && \
-	ckms --kms-url $(KMS_URL) kms certificates certify \
-		--certificate-id kafka_broker \
-		--issuer-certificate-id ca-root \
-		--generate-key-pair \
-		--subject-name "CN=$(KAFKA_HOSTNAME),O=$(CERT_ORG),C=$(CERT_COUNTRY)" \
-		--algorithm rsa2048 \
-		--days 365 \
-		--tag testing-env && \
-	ckms --kms-url $(KMS_URL) kms certificates export --certificate-id kafka_broker --format pkcs12 --pkcs12-password $(CERT_PASSWORD) $(CERT_DIR)/kafka_broker.p12 && \
-	ckms --kms-url $(KMS_URL) kms certificates export --certificate-id kafka_broker --format pem $(CERT_DIR)/kafka_broker.pem && \
-	keytool -importkeystore -srckeystore $(CERT_DIR)/kafka_broker.p12 -srcstoretype PKCS12 -srcstorepass $(CERT_PASSWORD) -destkeystore $(CERT_DIR)/kafka_broker.keystore.jks -deststoretype JKS -deststorepass $(CERT_PASSWORD) -noprompt && \
-	keytool -import -trustcacerts -alias ca-root -file $(CERT_DIR)/ca-root.pem -keystore $(CERT_DIR)/kafka.truststore.jks -storepass $(CERT_PASSWORD) -noprompt && \
-	echo "$(CERT_PASSWORD)" > $(CERT_DIR)/kafka_keystore_creds && \
-	echo "$(CERT_PASSWORD)" > $(CERT_DIR)/kafka_ssl_key_creds && \
-	echo "$(CERT_PASSWORD)" > $(CERT_DIR)/kafka_truststore_creds && \
-	echo "✓ Kafka certificate created" && \
-	echo "" && \
-	echo "Verifying certificates..." && \
-	openssl verify -CAfile $(CERT_DIR)/ca-root.pem $(CERT_DIR)/kafka_broker.pem >/dev/null 2>&1 && echo "✓ Kafka cert valid" || echo "✗ Kafka cert invalid" && \
-	openssl verify -CAfile $(CERT_DIR)/ca-root.pem $(CERT_DIR)/keycloak_server.pem >/dev/null 2>&1 && echo "✓ Keycloak cert valid" || echo "✗ Keycloak cert invalid" && \
-	echo "" && \
-	echo "✅ Certificate generation complete!"
+	@KMS_URL=$(KMS_URL) CERT_PASSWORD=$(CERT_PASSWORD) CERT_ORG="$(CERT_ORG)" CERT_COUNTRY=$(CERT_COUNTRY) DOMAIN=$(DOMAIN) \
+		$(CERT_DIR)/regenerate-certs.sh
 
 # Stop all services
 stop:

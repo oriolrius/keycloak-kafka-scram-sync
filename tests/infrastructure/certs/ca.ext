@@ -1,5 +1,4 @@
 [ v3_ca ]
 basicConstraints=CA:TRUE
-keyUsage=critical,keyCertSign,cRLSign,digitalSignature
+keyUsage=critical,keyCertSign,digitalSignature
 subjectKeyIdentifier=hash
-authorityKeyIdentifier=keyid:always,issuer
