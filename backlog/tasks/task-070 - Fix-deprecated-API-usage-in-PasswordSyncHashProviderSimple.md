@@ -1,9 +1,11 @@
 ---
 id: task-070
 title: Fix deprecated API usage in PasswordSyncHashProviderSimple
-status: To Do
-assignee: []
+status: In Progress
+assignee:
+  - '@claude'
 created_date: '2025-11-10 16:07'
+updated_date: '2025-11-10 17:00'
 labels:
   - technical-debt
   - maintenance
