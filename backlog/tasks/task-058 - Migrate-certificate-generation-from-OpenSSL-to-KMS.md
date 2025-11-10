@@ -1,8 +1,9 @@
 ---
 id: task-058
 title: Migrate certificate generation from OpenSSL to KMS
-status: To Do
-assignee: []
+status: In Progress
+assignee:
+  - '@claude'
 created_date: '2025-11-07 14:32'
 updated_date: '2025-11-10 16:14'
 labels: []
