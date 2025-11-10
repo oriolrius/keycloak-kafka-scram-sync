@@ -1,7 +1,7 @@
 ---
 id: task-071
 title: Filter user sync by realm list configuration
-status: In Progress
+status: Done
 assignee:
   - '@claude'
 created_date: '2025-11-10 17:01'
