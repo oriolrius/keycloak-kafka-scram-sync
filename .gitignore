@@ -72,3 +72,6 @@ frontend/.vite/
 e2e/node_modules/
 
 scram-test/data/
+
+# Test infrastructure runtime data
+tests/infrastructure/data/
