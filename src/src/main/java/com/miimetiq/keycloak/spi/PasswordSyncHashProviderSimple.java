@@ -60,16 +60,6 @@ public class PasswordSyncHashProviderSimple implements PasswordHashProvider {
     }
 
     @Override
-    public String encode(String rawPassword, int iterations) {
-        if (iterations == -1) {
-            iterations = defaultIterations;
-        }
-
-        byte[] salt = getSalt();
-        return encode(rawPassword, iterations, salt);
-    }
-
-    @Override
     public boolean verify(String rawPassword, PasswordCredentialModel credential) {
         byte[] salt = credential.getPasswordSecretData().getSalt();
         int iterations = credential.getPasswordCredentialData().getHashIterations();
