@@ -45,7 +45,21 @@ keycloak-kafka-sync-agent/
 
 ## Quick Start
 
-### 1. Build the SPI
+### 1. Get the SPI JAR
+
+**Option A: Download from GitHub Releases (Recommended)**
+
+```bash
+# Download the latest release
+./download-spi.sh
+
+# Or download a specific version
+./download-spi.sh v1.0.0
+```
+
+The JAR will be at: `src/target/keycloak-password-sync-spi.jar`
+
+**Option B: Build from Source**
 
 ```bash
 cd src
@@ -92,11 +106,40 @@ export KAFKA_REQUEST_TIMEOUT_MS=30000
 /opt/keycloak/bin/kc.sh start
 ```
 
+## Using with Docker Compose
+
+The SPI JAR can be easily mounted into a Keycloak container:
+
+```yaml
+services:
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.4
+    volumes:
+      # Mount the SPI JAR into Keycloak's providers directory
+      - ./src/target/keycloak-password-sync-spi.jar:/opt/keycloak/providers/keycloak-password-sync-spi.jar:ro
+    environment:
+      # Kafka configuration
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      KAFKA_SASL_MECHANISM: SCRAM-SHA-256
+      # ... other Keycloak settings
+```
+
+**Setup steps:**
+
+1. Download the JAR: `./download-spi.sh`
+2. Configure environment variables (see Configuration section)
+3. Start your services: `docker-compose up`
+
+See [tests/infrastructure/docker-compose.yml](tests/infrastructure/docker-compose.yml) for a complete example with Kafka and Keycloak.
+
 ## Testing
 
 The complete testing suite includes infrastructure and E2E tests:
 
 ```bash
+# Download or build the SPI JAR first
+./download-spi.sh  # or: cd src && mvn clean package
+
 # Start testing infrastructure
 cd tests/infrastructure
 make start
