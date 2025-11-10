@@ -12,6 +12,8 @@ import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.RealmModel;
 import org.keycloak.models.UserModel;
 
+import java.util.Set;
+
 /**
  * Event listener that intercepts password-related admin events and syncs
  * passwords directly to Kafka SCRAM credentials.
@@ -27,9 +29,13 @@ public class PasswordSyncEventListener implements EventListenerProvider {
     private final KeycloakSession session;
     private final KafkaScramSync kafkaSync;
     private final boolean kafkaSyncEnabled;
+    private final Set<String> allowedRealms;
+    private final boolean realmFilteringEnabled;
 
-    public PasswordSyncEventListener(KeycloakSession session) {
+    public PasswordSyncEventListener(KeycloakSession session, Set<String> allowedRealms, boolean realmFilteringEnabled) {
         this.session = session;
+        this.allowedRealms = allowedRealms;
+        this.realmFilteringEnabled = realmFilteringEnabled;
 
         // Check if Kafka sync is enabled (default: true)
         String kafkaEnabled = System.getProperty("password.sync.kafka.enabled", "true");
@@ -73,6 +79,16 @@ public class PasswordSyncEventListener implements EventListenerProvider {
         String username = null;
         String password = null;
 
+        // Check if realm filtering is enabled and if this realm is allowed
+        String realmName = getRealmName(event);
+        if (realmFilteringEnabled && !isRealmAllowed(realmName)) {
+            LOG.infof("Skipping password sync for user in realm '%s' (not in allowed list: %s)",
+                    realmName, String.join(", ", allowedRealms));
+            // Clear password from ThreadLocal even though we're not syncing
+            PasswordCorrelationContext.getAndClearPassword();
+            return;
+        }
+
         // Try to extract username from representation JSON for CREATE events
         if (isUserCreate && event.getRepresentation() != null) {
             username = extractUsernameFromRepresentation(event.getRepresentation());
@@ -89,13 +105,44 @@ public class PasswordSyncEventListener implements EventListenerProvider {
         // Sync to Kafka if we have both username and password
         if (password != null && !password.isEmpty() &&
                 username != null && !username.isEmpty()) {
-            LOG.infof("Retrieved password from ThreadLocal for user: %s", username);
+            LOG.infof("Retrieved password from ThreadLocal for user: %s in realm: %s", username, realmName);
             syncPasswordToKafka(username, password);
         } else {
             LOG.warnf("No password found for event type=%s, path=%s (password in ThreadLocal: %s)",
                     event.getOperationType(), event.getResourcePath(),
                     (password != null ? "present" : "null"));
         }
+    }
+
+    /**
+     * Extracts the realm name from the AdminEvent.
+     *
+     * @param event the admin event
+     * @return the realm name, or "unknown" if not found
+     */
+    private String getRealmName(AdminEvent event) {
+        try {
+            String realmId = event.getRealmId();
+            if (realmId != null) {
+                RealmModel realm = session.realms().getRealm(realmId);
+                if (realm != null) {
+                    return realm.getName();
+                }
+            }
+        } catch (Exception e) {
+            LOG.warnf(e, "Error extracting realm name from event");
+        }
+        return "unknown";
+    }
+
+    /**
+     * Checks if a realm is in the allowed list.
+     *
+     * @param realmName the realm name to check
+     * @return true if the realm is allowed or if filtering is disabled, false otherwise
+     */
+    private boolean isRealmAllowed(String realmName) {
+        return !realmFilteringEnabled || allowedRealms.contains(realmName);
     }
 
     private String extractUserIdFromPath(String resourcePath) {

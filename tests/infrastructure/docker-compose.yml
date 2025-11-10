@@ -56,6 +56,9 @@ services:
       KAFKA_SSL_KEYSTORE_LOCATION: ${KAFKA_SSL_KEYSTORE_LOCATION:-/opt/keycloak/conf/certs/kafka_broker.keystore.jks}
       KAFKA_SSL_KEYSTORE_PASSWORD: ${KAFKA_SSL_KEYSTORE_PASSWORD:-The2password.}
       KAFKA_SSL_KEY_PASSWORD: ${KAFKA_SSL_KEY_PASSWORD:-The2password.}
+
+      # Realm Filtering Configuration (optional)
+      PASSWORD_SYNC_REALMS: ${PASSWORD_SYNC_REALMS:-}
     ports:
       - "${KEYCLOAK_HTTPS_HOST_PORT:-57003}:${KEYCLOAK_HTTPS_CONTAINER_PORT:-8443}"
     volumes:

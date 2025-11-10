@@ -36,6 +36,7 @@ This directory contains all testing infrastructure and end-to-end tests for the 
 - ✅ Message production and consumption with authenticated clients
 - ✅ SSL/TLS encrypted communication
 - ✅ Certificate management with Cosmian KMS
+- ✅ **Realm filtering** - selective sync based on realm configuration
 
 ---
 
@@ -67,7 +68,9 @@ tests/
 └── e2e/                               # End-to-end tests
     ├── README.md                      # E2E test details
     ├── scram-sync-e2e.test.js         # Main E2E test
-    ├── test-both-mechanisms.sh        # Test orchestration
+    ├── test-both-mechanisms.sh        # Test orchestration (SHA-256 & SHA-512)
+    ├── realm-filtering-e2e.test.js    # Realm filtering E2E test
+    ├── test-realm-filtering.sh        # Realm filtering test orchestration
     ├── test-log-parsing.js            # Consumer readiness demo
     ├── package.json                   # NPM dependencies
     └── package-lock.json
@@ -91,6 +94,7 @@ This starts:
 
 ### 2. Run E2E Tests
 
+**SCRAM mechanism tests (SHA-256 & SHA-512):**
 ```bash
 cd tests/e2e
 ./test-both-mechanisms.sh
@@ -102,6 +106,14 @@ This automatically:
 3. Cleans up and restarts services
 4. Tests SCRAM-SHA-512 mechanism
 5. Reports results for both
+
+**Realm filtering test:**
+```bash
+cd tests/e2e
+./test-realm-filtering.sh
+```
+
+This validates selective password synchronization based on realm configuration
 
 ### 3. Expected Output
 
@@ -297,6 +309,59 @@ node scram-sync-e2e.test.js
 
 **Note**: Services must already be running with the correct mechanism configured.
 
+### Realm Filtering Test
+
+The realm filtering E2E test validates that the SPI correctly filters password synchronization based on configured realms.
+
+**Test Flow:**
+```
+1. Configure SPI to sync only "test-realm" (via PASSWORD_SYNC_REALMS env var)
+2. Create "test-realm" in Keycloak
+3. Create user-master in "master" realm (should NOT sync)
+4. Create user-test-realm in "test-realm" (SHOULD sync)
+5. Set passwords for both users
+6. Verify logs show realm filtering is active
+7. Test Kafka authentication:
+   - user-test-realm SUCCEEDS (was synced)
+   - user-master FAILS (was filtered out)
+```
+
+**Run the realm filtering test:**
+```bash
+cd tests/e2e
+./test-realm-filtering.sh
+```
+
+This automatically:
+1. Builds the SPI
+2. Configures realm filtering (PASSWORD_SYNC_REALMS=test-realm)
+3. Starts services with filtering enabled
+4. Creates both realms and users
+5. Validates sync behavior
+6. Tests authentication for both users
+7. Verifies logs confirm filtering
+
+**Expected Output:**
+```
+═══════════════════════════════════════════════════════
+   Realm Filtering E2E Test
+═══════════════════════════════════════════════════════
+✅ test-realm created
+✅ Users created in both realms
+✅ Realm filtering is ENABLED for: test-realm
+✅ Master realm user was NOT synced (auth failed)
+✅ Test realm user WAS synced (auth succeeded)
+✅ Logs confirmed realm filtering behavior
+```
+
+**What This Validates:**
+- ✅ Realm filtering configuration via environment variable
+- ✅ Multiple realm support
+- ✅ Selective password synchronization
+- ✅ Users in non-allowed realms are filtered out
+- ✅ Users in allowed realms are synced correctly
+- ✅ Proper logging of filtering decisions
+
 ### Log Parsing for Consumer Readiness
 
 The tests use a custom log parser to detect when the Kafka consumer group is ready:
@@ -487,6 +552,9 @@ The infrastructure uses environment variables with defaults:
 ```bash
 # Kafka SCRAM mechanism (256 or 512)
 KAFKA_SCRAM_MECHANISM=256
+
+# Realm filtering (optional - comma-separated list of realm names)
+PASSWORD_SYNC_REALMS=test-realm,production
 
 # Service URLs
 KEYCLOAK_URL=https://localhost:57003

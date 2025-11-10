@@ -164,6 +164,53 @@ See [tests/README.md](tests/README.md) for comprehensive testing documentation.
 | `KAFKA_DEFAULT_API_TIMEOUT_MS` | Kafka API operation timeout | `60000` |
 | `KAFKA_REQUEST_TIMEOUT_MS` | Kafka request timeout | `30000` |
 | `password.sync.kafka.enabled` | Enable/disable Kafka sync (Java system property) | `true` |
+| `PASSWORD_SYNC_REALMS` | Comma-separated list of realm names to sync (env var) | none (all realms) |
+| `password.sync.realms` | Comma-separated list of realm names to sync (Java system property) | none (all realms) |
+
+### Realm Filtering Configuration (Optional)
+
+By default, the SPI synchronizes passwords for users in **all realms**. You can restrict synchronization to specific realms using the realm filtering feature.
+
+**Configuration Priority:**
+1. Config.Scope configuration (Keycloak standalone.xml or similar)
+2. Java system property: `password.sync.realms`
+3. Environment variable: `PASSWORD_SYNC_REALMS`
+
+**Examples:**
+
+```bash
+# Environment variable (recommended for Docker/Kubernetes)
+export PASSWORD_SYNC_REALMS=master,production,staging
+
+# Java system property
+-Dpassword.sync.realms=master,production,staging
+
+# In Keycloak standalone.xml or domain.xml (Config.Scope)
+<spi name="eventsListener">
+    <provider name="password-sync-listener" enabled="true">
+        <properties>
+            <property name="realms" value="master,production,staging"/>
+        </properties>
+    </provider>
+</spi>
+```
+
+**Behavior:**
+- When configured: Only users from the specified realms will be synced to Kafka
+- When empty or not configured: All users from all realms will be synced (backward compatible)
+- At startup, the SPI logs which realms will be synced
+
+**Example startup logs:**
+
+```
+INFO: Realm filtering ENABLED. Password sync will be restricted to realms: master, production, staging
+```
+
+or
+
+```
+INFO: Realm filtering is DISABLED (no configuration found). All realms will be synced.
+```
 
 ### Password Hashing Configuration
 
